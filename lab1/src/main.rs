@@ -16,11 +16,13 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
         args.push(arg); 
     }
 
+    // if too few or too many args
     if args.len() < MIN_COMMAND_LINE_ARGS || args.len() > MAX_COMMAND_LINE_ARGS {
         usage(&args[ARGS_IDX_PROGRAM_NAME]);
         return Err(ERR_BADLY_FORMED_COMMAND_LINE);
     }
 
+    // if the optional arg is provided and it is NOT "whinge"
     if args.len() == MAX_COMMAND_LINE_ARGS && args[ARGS_IDX_WHINGE_MODE] != "whinge" {
         usage(&args[ARGS_IDX_PROGRAM_NAME]);
         return Err(ERR_BADLY_FORMED_COMMAND_LINE);
@@ -38,7 +40,7 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
 }
 
 fn recite(play_title: &String, play: &Play) {
-    println!("PLAY TITLE: {}", play_title);
+    println!("TODO: PLAY TITLE: {}", play_title);
 
     // TODO: why not destructure in the for loop itself?
     for line_play in play {
