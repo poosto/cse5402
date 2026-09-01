@@ -2,11 +2,11 @@ pub mod lab1;
 
 use std::{env, sync::atomic::Ordering};
 
-use lab1::declarations::{ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, ERR_FAILED_TO_GENERATE_SCRIPT, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE};
+use lab1::declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE};
 
 // TODO: why not &str?
 fn usage(program_name: &String) {
-    println!("usage: ./{} <configuration_file_name> [whinge]", program_name);
+    println!("usage: {} <configuration_file_name> [whinge]", program_name);
 }
 
 fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
@@ -23,10 +23,10 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
 
     if args.len() == MAX_COMMAND_LINE_ARGS && args[ARGS_IDX_WHINGE_MODE] != "whinge" {
         usage(&args[ARGS_IDX_PROGRAM_NAME]);
-        return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+        return Err(ERR_BADLY_FORMED_COMMAND_LINE);
     }
 
-    *config_file_name = args[ARGS_IDX_CONFIG_FILE].clone();
+    config_file_name.clone_from(&args[ARGS_IDX_CONFIG_FILE]);
 
     // if "whinge" is provided (arg is already validated above)
     if args.len() == MAX_COMMAND_LINE_ARGS {
@@ -37,8 +37,24 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
     Ok(())
 }
 
+fn recite(play_title: &String, play: &Play) {
+    println!("PLAY TITLE: {}", play_title);
+
+    // TODO: why not destructure in the for loop itself?
+    for line_play in play {
+        match line_play {
+            (_, character_name, line_text) => {
+                println!("TODO: {} {}", character_name, line_text);
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), u8> {
-    parse_args(&mut String::from("test"))?;
+    let mut config_file_name = String::new();
+    parse_args(&mut config_file_name)?;
+
+    recite(&String::from("bobby"), &Vec::new());
 
     Ok(())
 }
