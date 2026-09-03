@@ -46,7 +46,10 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
 fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> Result<(), u8> {
     match File::open(file_name) {
         Err(e) => {
-            println!("ERROR: Failed to open file {} ({})", file_name, e);
+            if WHINGE_MODE.load(Ordering::SeqCst) {
+                println!("WARNING: Failed to open file {} ({})", file_name, e);
+            }
+
             Err(ERR_FAILED_TO_GENERATE_SCRIPT)
         }
         Ok(file) => {
@@ -115,7 +118,12 @@ fn add_config(config_line: &String, play_config: &mut PlayConfig) {
 
 fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
     let mut lines = Vec::<String>::new();
-    grab_trimmed_file_lines(config_file, &mut lines)?;
+
+    // unlike a character's part file, a missing configuration file is fatal
+    if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
+        println!("ERROR: Failed to read configuration file {}", config_file);
+        return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+    }
 
     // Lines are already trimmed, but this also removes empty whitespace lines
     lines.retain(|line| !line.is_empty());
