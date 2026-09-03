@@ -36,6 +36,10 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
                 play_lines.push((line_number, character_name.to_string(), rest.trim().to_string()));
             }
         }
+    } else if WHINGE_MODE.load(Ordering::SeqCst) {
+        // no whitespace at all means the line holds a single token, so it cannot
+        // carry both a line number and the text the character speaks
+        println!("WARNING: Skipping {}'s line \"{}\" because it has only one token", character_name, character_line);
     }
 }
 

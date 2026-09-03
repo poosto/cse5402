@@ -1,0 +1,14 @@
+
+   
+Fuzz Test: Hamlet ACT II Scene II with a deliberately messy configuration
+	Guildenstern	Guildenstern.txt   
+King King.txt
+Rosencrantz
+Queen Queen.txt these trailing tokens should be ignored
+BadCharacter no_such_part_file.txt
+
+   	   
+Rosencrantz Rosencrantz.txt
+Messenger Messenger.txt
+
+
