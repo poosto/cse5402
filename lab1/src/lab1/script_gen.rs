@@ -53,6 +53,7 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
                         println!("ERROR: Failed to read line in buffer ({:?})", e);
                         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
                     }
+                    // TODO: EOF constant?
                     Ok(0) => return Ok(()),
                     Ok(_) => file_lines.push(file_line.trim().to_string())
                 }
@@ -73,4 +74,14 @@ fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(),
     }
 
     Ok(())
+}
+
+fn add_config(config_line: &String, play_config: &mut PlayConfig) {
+    let words: Vec<&str> = config_line.split_whitespace().collect();
+
+    if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
+        println!("(TODO) WARN: Received {} tokens, expected {}", words.len(), LINE_TOKEN_COUNT);
+    } 
+
+    // TODO: continue #13
 }
