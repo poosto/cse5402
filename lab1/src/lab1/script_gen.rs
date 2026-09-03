@@ -112,6 +112,9 @@ fn read_config(config_file: &String, play_title: &mut String, play_config: &mut 
     let mut lines = Vec::<String>::new();
     grab_trimmed_file_lines(config_file, &mut lines)?;
 
+    // Lines are already trimmed, but this also removes empty whitespace lines
+    lines.retain(|line| !line.is_empty());
+
     if lines.len() < MIN_FRAGMENTS {
         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
     }
