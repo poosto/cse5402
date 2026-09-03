@@ -106,7 +106,7 @@ fn read_config(config_file: &String, play_title: &mut String, play_config: &mut 
     Ok(())
 }
 
-fn script_gen(config_file: &String, play_title: &mut String, play_lines: &mut Play) -> Result<(), u8> {
+pub fn script_gen(config_file: &String, play_title: &mut String, play_lines: &mut Play) -> Result<(), u8> {
     let mut config = PlayConfig::new(); 
     read_config(config_file, play_title, &mut config)?;
 

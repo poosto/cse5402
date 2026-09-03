@@ -2,7 +2,7 @@ pub mod lab1;
 
 use std::{env, sync::atomic::Ordering};
 
-use lab1::declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE};
+use lab1::{declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE}, script_gen::script_gen};
 
 // TODO: why not &str?
 fn usage(program_name: &String) {
@@ -49,7 +49,7 @@ fn recite(play_title: &String, play: &Play) {
             println!("\n{}", character_name);
         } 
 
-        println!("TODO: {} {}", character_name, line_text);
+        println!("{}", line_text);
 
         prev_character_name = character_name.clone();
     }
@@ -63,8 +63,9 @@ fn main() -> Result<(), u8> {
     let mut play_lines = Play::new();
 
     // TODO: pass into script gen function
+    script_gen(&config_file_name, &mut play_title, &mut play_lines)?;
 
-    recite(&String::from("bobby"), &Vec::new());
+    recite(&play_title, &play_lines);
 
     Ok(())
 }
