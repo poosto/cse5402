@@ -30,7 +30,7 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
                 } 
             }
             Ok(line_number) => {
-                play_lines.push((line_number, character_name.to_string(), rest.to_string())); 
+                play_lines.push((line_number, character_name.to_string(), rest.trim().to_string()));
             }
         }
     }

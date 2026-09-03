@@ -65,6 +65,8 @@ fn main() -> Result<(), u8> {
     // TODO: pass into script gen function
     script_gen(&config_file_name, &mut play_title, &mut play_lines)?;
 
+    play_lines.sort();
+
     recite(&play_title, &play_lines);
 
     Ok(())
