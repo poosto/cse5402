@@ -42,19 +42,27 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
 fn recite(play_title: &String, play: &Play) {
     println!("TODO: PLAY TITLE: {}", play_title);
 
-    // TODO: why not destructure in the for loop itself?
-    for line_play in play {
-        match line_play {
-            (_, character_name, line_text) => {
-                println!("TODO: {} {}", character_name, line_text);
-            }
-        }
+    // TODO: is this okay instead of destructuring in match statement as per instructions?
+    let mut prev_character_name = String::new();
+    for (_, character_name, line_text) in play {
+        if prev_character_name != *character_name {
+            println!("\n{}", character_name);
+        } 
+
+        println!("TODO: {} {}", character_name, line_text);
+
+        prev_character_name = character_name.clone();
     }
 }
 
 fn main() -> Result<(), u8> {
     let mut config_file_name = String::new();
     parse_args(&mut config_file_name)?;
+
+    let mut play_title = String::new();
+    let mut play_lines = Play::new();
+
+    // TODO: pass into script gen function
 
     recite(&String::from("bobby"), &Vec::new());
 
