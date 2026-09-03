@@ -60,3 +60,17 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
         }
     }
 }
+
+fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
+    // TODO: ok instead of match?
+    for (character_name, character_file_name) in play_config {
+        let mut lines = Vec::<String>::new();
+        grab_trimmed_file_lines(character_file_name, &mut lines)?;
+
+        for line in lines {
+            add_script_line(play_lines, &line, character_name);
+        }
+    }
+
+    Ok(())
+}
