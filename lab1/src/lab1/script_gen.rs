@@ -64,14 +64,33 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
 }
 
 fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
+    let mut valid_character_count = 0;
+
     // TODO: ok instead of match?
     for (character_name, character_file_name) in play_config {
         let mut lines = Vec::<String>::new();
-        grab_trimmed_file_lines(character_file_name, &mut lines)?;
+
+        // a part file that cannot be opened makes its configuration line badly
+        // formed rather than fatal, so skip that character and keep going
+        if grab_trimmed_file_lines(character_file_name, &mut lines).is_err() {
+            if WHINGE_MODE.load(Ordering::SeqCst) {
+                println!("(TODO) WARN: Skipping character {} whose part file {} could not be read", character_name, character_file_name);
+            }
+
+            continue;
+        }
+
+        valid_character_count += 1;
 
         for line in lines {
             add_script_line(play_lines, &line, character_name);
         }
+    }
+
+    // a configuration naming no character whose part file opened cannot yield a script
+    if valid_character_count == 0 {
+        println!("ERROR: No character in the configuration had a part file that could be read");
+        return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
     }
 
     Ok(())
