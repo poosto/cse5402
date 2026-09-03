@@ -3,6 +3,8 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::sync::atomic::Ordering;
 
+use crate::lab1::declarations::ERR_FAILED_TO_GENERATE_SCRIPT;
+
 use super::declarations::{Play, WHINGE_MODE};
 
 type PlayConfig = Vec<(String, String)>;
@@ -28,6 +30,32 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
             }
             Ok(line_number) => {
                 play_lines.push((line_number, character_name.to_string(), rest.to_string())); 
+            }
+        }
+    }
+}
+
+fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> Result<(), u8> {
+    match File::open(file_name) {
+        Err(e) => {
+            println!("ERROR: Failed to open file ({:?})", e);
+            Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+        }
+        Ok(file) => {
+            let mut buf = BufReader::new(file);
+            let mut file_line = String::new();
+
+            loop {
+                file_line.clear();
+
+                match buf.read_line(&mut file_line) {
+                    Err(e) => {
+                        println!("ERROR: Failed to read line in buffer ({:?})", e);
+                        return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+                    }
+                    Ok(0) => return Ok(()),
+                    Ok(_) => file_lines.push(file_line.trim().to_string())
+                }
             }
         }
     }
