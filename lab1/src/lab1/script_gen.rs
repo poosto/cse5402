@@ -17,6 +17,9 @@ const LINE_IDX_CHARACTER_NAME: usize = 0;
 const LINE_IDX_CHARACTER_FILE: usize = 1;
 const LINE_TOKEN_COUNT: usize = 2;
 
+// read_line reports zero bytes read only at end of file
+const BYTES_READ_AT_EOF: usize = 0;
+
 fn add_script_line(play_lines: &mut Play, character_line: &String, character_name: &String) {
     if character_line.is_empty() {
         return;
@@ -26,7 +29,7 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
         match first_token.parse::<usize>() {
             Err(_) => {
                 if WHINGE_MODE.load(Ordering::SeqCst) {
-                    println!("(TODO) ERROR: {} does not represent a valid usize value", first_token);
+                    println!("WARNING: Skipping {}'s line because its first token \"{}\" does not represent a valid usize value", character_name, first_token);
                 } 
             }
             Ok(line_number) => {
@@ -39,7 +42,7 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
 fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> Result<(), u8> {
     match File::open(file_name) {
         Err(e) => {
-            println!("ERROR: Failed to open file ({:?})", e);
+            println!("ERROR: Failed to open file {} ({})", file_name, e);
             Err(ERR_FAILED_TO_GENERATE_SCRIPT)
         }
         Ok(file) => {
@@ -51,11 +54,10 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
 
                 match buf.read_line(&mut file_line) {
                     Err(e) => {
-                        println!("ERROR: Failed to read line in buffer ({:?})", e);
+                        println!("ERROR: Failed to read a line from file {} ({})", file_name, e);
                         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
                     }
-                    // TODO: EOF constant?
-                    Ok(0) => return Ok(()),
+                    Ok(BYTES_READ_AT_EOF) => return Ok(()),
                     Ok(_) => file_lines.push(file_line.trim().to_string())
                 }
             }
@@ -66,7 +68,6 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
 fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(), u8> {
     let mut valid_character_count = 0;
 
-    // TODO: ok instead of match?
     for (character_name, character_file_name) in play_config {
         let mut lines = Vec::<String>::new();
 
@@ -74,7 +75,7 @@ fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(),
         // formed rather than fatal, so skip that character and keep going
         if grab_trimmed_file_lines(character_file_name, &mut lines).is_err() {
             if WHINGE_MODE.load(Ordering::SeqCst) {
-                println!("(TODO) WARN: Skipping character {} whose part file {} could not be read", character_name, character_file_name);
+                println!("WARNING: Skipping character {} whose part file {} could not be read", character_name, character_file_name);
             }
 
             continue;
@@ -100,7 +101,7 @@ fn add_config(config_line: &String, play_config: &mut PlayConfig) {
     let words: Vec<&str> = config_line.split_whitespace().collect();
 
     if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
-        println!("(TODO) WARN: Received {} tokens, expected {}", words.len(), LINE_TOKEN_COUNT);
+        println!("WARNING: Configuration line \"{}\" has {} tokens, expected {}", config_line, words.len(), LINE_TOKEN_COUNT);
     } 
 
     if words.len() >= LINE_TOKEN_COUNT {
@@ -116,6 +117,7 @@ fn read_config(config_file: &String, play_title: &mut String, play_config: &mut 
     lines.retain(|line| !line.is_empty());
 
     if lines.len() < MIN_FRAGMENTS {
+        println!("ERROR: Configuration file {} needs a title and at least one character definition", config_file);
         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
     }
 

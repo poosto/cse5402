@@ -4,7 +4,6 @@ use std::{env, sync::atomic::Ordering};
 
 use lab1::{declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE}, script_gen::script_gen};
 
-// TODO: why not &str?
 fn usage(program_name: &String) {
     println!("usage: {} <configuration_file_name> [whinge]", program_name);
 }
@@ -40,7 +39,7 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
 }
 
 fn recite(play_title: &String, play: &Play) {
-    println!("TODO: PLAY TITLE: {}", play_title);
+    println!("{}", play_title);
 
     // TODO: is this okay instead of destructuring in match statement as per instructions?
     let mut prev_character_name = String::new();
@@ -62,7 +61,6 @@ fn main() -> Result<(), u8> {
     let mut play_title = String::new();
     let mut play_lines = Play::new();
 
-    // TODO: pass into script gen function
     script_gen(&config_file_name, &mut play_title, &mut play_lines)?;
 
     play_lines.sort();
