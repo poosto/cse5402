@@ -11,6 +11,7 @@ type PlayConfig = Vec<(String, String)>;
 
 const IDX_PLAY_TITLE: usize = 0;
 const IDX_CHARACTER_FRAGMENTS: usize = 1;
+const MIN_FRAGMENTS: usize = 2; 
 
 const LINE_IDX_CHARACTER_NAME: usize = 0;
 const LINE_IDX_CHARACTER_FILE: usize = 1;
@@ -83,5 +84,24 @@ fn add_config(config_line: &String, play_config: &mut PlayConfig) {
         println!("(TODO) WARN: Received {} tokens, expected {}", words.len(), LINE_TOKEN_COUNT);
     } 
 
-    // TODO: continue #13
+    if words.len() >= LINE_TOKEN_COUNT {
+        play_config.push((words[LINE_IDX_CHARACTER_NAME].to_string(), words[LINE_IDX_CHARACTER_FILE].to_string()));
+    }
+}
+
+fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+    let mut lines = Vec::<String>::new();
+    grab_trimmed_file_lines(config_file, &mut lines)?;
+
+    if lines.len() < MIN_FRAGMENTS {
+        return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+    }
+
+    *play_title = lines[IDX_PLAY_TITLE].clone();
+
+    for line in &lines[IDX_CHARACTER_FRAGMENTS..] {
+        add_config(line, play_config);
+    }
+
+    Ok(())
 }
