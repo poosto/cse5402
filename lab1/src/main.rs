@@ -46,7 +46,7 @@ fn recite(play_title: &String, play: &Play) {
     let mut prev_character_name = String::new();
     for (_, character_name, line_text) in play {
         if prev_character_name != *character_name {
-            println!("\n{}", character_name);
+            println!("\n{}.", character_name);
         } 
 
         println!("{}", line_text);
