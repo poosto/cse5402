@@ -11,7 +11,7 @@ type PlayConfig = Vec<(String, String)>;
 
 const IDX_PLAY_TITLE: usize = 0;
 const IDX_CHARACTER_FRAGMENTS: usize = 1;
-const MIN_FRAGMENTS: usize = 2; 
+const MIN_CONFIG_LINES: usize = 2;
 
 const LINE_IDX_CHARACTER_NAME: usize = 0;
 const LINE_IDX_CHARACTER_FILE: usize = 1;
@@ -120,7 +120,7 @@ fn read_config(config_file: &String, play_title: &mut String, play_config: &mut 
     // Lines are already trimmed, but this also removes empty whitespace lines
     lines.retain(|line| !line.is_empty());
 
-    if lines.len() < MIN_FRAGMENTS {
+    if lines.len() < MIN_CONFIG_LINES {
         println!("ERROR: Configuration file {} needs a title and at least one character definition", config_file);
         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
     }
