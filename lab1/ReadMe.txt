@@ -5,15 +5,16 @@ SECTION 1: IDENTIFICATION AND DESIGN
 CSE 5402 Fall 2025 Lab 1: "The play's the thing"
 
 Team members:
-    [YOUR FULL NAME] <[YOUR EMAIL]>
-    [TEAMMATE NAME]  <[TEAMMATE EMAIL]>          <-- delete if working alone
+* Preston Meek: meek@wustl.edu
 
 --------------------------------------------------------------------------------
 Summary
 --------------------------------------------------------------------------------
 
-[OVERVIEW OF THE SOLUTION APPROACH -- a draft is below; edit it into your own
-words and delete anything that no longer matches the code you submit.]
+When approaching this lab, I focused on having a modular design such that individual functions and components were isolated.
+This decoupling allowed me to seamlessly follow each numbered step in the lab overview and implement functions one-by-one.
+Once all of the individual parsing and logic functions were written, putting them together in the main entry point of the program was very straightforward.
+This approach led to very little hurdles, even with minimal (practically zero) use of AI for writing code.
 
 The program reads a configuration file naming a play and the characters in it,
 reads each character's numbered lines from that character's own part file,
@@ -31,7 +32,8 @@ Control flows through four stages:
        tuples.
     3. main sorts the Play.  Because the tuple's first element is the usize line
        number, the derived tuple ordering sorts the whole play by line number
-       without any custom comparison function; ties fall back to the character
+       without any custom comparison function; ties (which should never happens
+       in the well-formed case) fall back to the character
        name, which keeps the output deterministic.
     4. recite walks the sorted Play, printing a blank line and the speaker's
        name (with a trailing period) whenever the speaker changes, and then the
@@ -61,7 +63,7 @@ Modules
     src/lab1/script_gen.rs      Everything involved in turning files into a Play:
                                 add_script_line, grab_trimmed_file_lines,
                                 process_config, add_config, read_config, and the
-                                public script_gen entry point.  The PlayConfig
+                                public script_gen entry point. The PlayConfig
                                 type and the index constants live here and are
                                 private, because nothing outside this file uses
                                 them.
