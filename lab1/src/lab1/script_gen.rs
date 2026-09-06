@@ -61,7 +61,10 @@ fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> 
 
                 match buf.read_line(&mut file_line) {
                     Err(e) => {
-                        println!("ERROR: Failed to read a line from file {} ({})", file_name, e);
+                        if WHINGE_MODE.load(Ordering::SeqCst) {
+                            println!("WARNING: Failed to read a line from file {} ({})", file_name, e);
+                        }
+
                         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
                     }
                     Ok(BYTES_READ_AT_EOF) => return Ok(()),
