@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 enum Direction {
     North,
     South,
@@ -32,6 +32,7 @@ trait Turner {
     fn turn(&mut self, r: Rotation);
 }
 
+#[derive(Debug)]
 struct Car {
     name: String,
     dir: Direction,
@@ -76,12 +77,71 @@ impl Turner for Car {
     }
 }
 
+fn figure_eight<T: Mover + Turner + std::fmt::Debug>(c: &mut T) {
+    // 1
+    c.advance();
+    println!("{:?}", c);
+
+    // 2
+    c.turn(Rotation::Left);
+    c.advance();
+    println!("{:?}", c);
+
+    // 3
+    c.turn(Rotation::Left);
+    c.advance();
+    println!("{:?}", c);
+
+    // 4
+    c.turn(Rotation::Left);
+    c.advance();
+    println!("{:?}", c);
+
+    // 5
+    c.advance();
+    println!("{:?}", c);
+
+    // 6
+    c.turn(Rotation::Right);
+    c.advance();
+    println!("{:?}", c);
+
+    // 7
+    c.turn(Rotation::Right);
+    c.advance();
+    println!("{:?}", c);
+
+    // 8
+    c.turn(Rotation::Right);
+    c.advance();
+    println!("{:?}", c);
+}
+
 fn main() {
     let mut car = Car::new();
+    
+    #[cfg(oldexercise)]
+    {
+        println!("Car values: {} {} {} {}", car.name, car.dir, car.x, car.y);
 
-    println!("Car values: {} {} {} {}", car.name, car.dir, car.x, car.y);
+        car.advance();
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
 
-    car.advance();
+        car.advance();
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
 
-    println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
+        car.turn(Rotation::Left);
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
+
+        car.advance();
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
+
+        car.turn(Rotation::Right);
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
+
+        car.turn(Rotation::Right);
+        println!("Car values again: {} {} {} {}", car.name, car.dir, car.x, car.y);
+    }
+
+    figure_eight(&mut car);
 }
