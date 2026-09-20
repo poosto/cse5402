@@ -201,8 +201,10 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
         cd lab1
 
     The unpacked directory contains Cargo.toml, Cargo.lock, the src directory,
-    the configuration and part files used for testing, run_tests.sh, and this
-    ReadMe.txt.
+    the configuration and part files used for testing, run_tests.sh,
+    gen_output.sh, fuzz_test.py, test_output.txt, the ai_transcripts directory
+    holding the exported Generative AI conversations cited in Section 4, and
+    this ReadMe.txt.
 
 2.  Make the course Rust toolchain available:
 
@@ -401,10 +403,23 @@ The generator varies file content rather than command lines, and always passes
 a valid Unicode configuration file name, so it does not reach the argument
 handling itself; the argv cases were tested by hand instead.
 
-[DECIDE WHETHER THE GENERATOR SHIPS WITH THE SUBMISSION. If it does, name the
-file here and add it to the list of contents in Section 2 step 1. If it does
-not, this subsection still describes the testing accurately, but do not refer
-to it as an enclosed file.]
+The generator file created by Claude, fuzz_test.py, is included for reference,
+but does not need to be run unless interested. There are simpler shell scripts
+included in this repository that show the program working.
+
+The campaign is seeded, so it reproduces exactly:
+
+        cargo build
+        for s in 1 7 99 2718 31415 8675309; do
+            python3 fuzz_test.py ./target/debug/lab1 2000 $s
+        done
+
+Each seed runs 2000 cases and prints how many passed.
+
+The miscellaneous .txt files in this repository are from trying things manually
+and prompting Claude to create files that catch specific edge cases. It is
+also nice to have these text files to verify the program works with manual
+cargo commands.
 
 --------------------------------------------------------------------------------
 How to reproduce
@@ -437,23 +452,77 @@ the Macbeth fragment, the fuzzed configuration with and without whinge mode, the
 numeric edge cases, two failure cases, and the full suite.
 
 ================================================================================
-SECTION 4: AI USAGE
+SECTION 4: AI USAGE AND CITATIONS
 ================================================================================
 
-[TO BE WRITTEN. Record here what was written by hand and what an AI assistant
-contributed, so the division of labor is on the record. The items below are
-the ones an assistant touched in this project; keep, cut, and reword them as
-you see fit, and add anything I have missed.]
+This section documents collaboration with Generative AI as required by the
+CSE 5402 Generative AI Use Policy. Claude Code does not support public link
+sharing of a conversation, so under the policy's Access Link or Appendix
+requirement each interaction is exported in full and included with this
+submission, in the ai_transcripts directory.
 
-*   [Who wrote the program itself: the module structure, the functions,
-    the error-code scheme, and the configuration and part files used for
-    testing.]
-*   [An assistant supplied the empty-argument-vector guard in parse_args --
-    the FALLBACK_PROGRAM_NAME constant and the args.get(...).unwrap_or(...)
-    in place of indexing position 0 -- after fuzzing turned up the panic it
-    prevents.]
-*   [An assistant applied the mechanical &String-to-&str conversion across the
-    function signatures; the decision to make that change was mine.]
-*   [An assistant wrote the randomized test generator described in Section 3
-    and ran the campaign; run_tests.sh and the fixed test cases were mine.]
-*   [Editorial passes on this ReadMe: drafting and formatting.]
+--------------------------------------------------------------------------------
+Citations
+--------------------------------------------------------------------------------
+
+[1] Anthropic, September 5, 2026, "Lab 1 design review and ReadMe drafting,"
+    [Generative AI chat], Claude Opus 5 (Claude Code v2.1.245), exported
+    transcript included as Appendix A
+    (ai_transcripts/2026-09-05-lab1-design-and-readme.txt).
+
+[2] Anthropic, September 8, 2026, "Lab 1 code review," [Generative AI chat],
+    Claude Opus 5 (Claude Code v2.1.245), exported transcript included as
+    Appendix B (ai_transcripts/2026-09-08-lab1-review.txt).
+
+[3] Anthropic, September 20, 2026, "Lab 1 fuzz testing, &str conversion, and
+    ReadMe completion," [Generative AI chat], Claude Opus 5
+    (Claude Code v2.1.245), exported transcript included as Appendix C
+    (ai_transcripts/2026-09-20-lab1-fuzzing-and-readme.txt).
+
+--------------------------------------------------------------------------------
+Division of work
+--------------------------------------------------------------------------------
+
+I wrote the program: the module structure, all ten functions, the type and
+constant declarations, the two error codes and the whinge-gated warning scheme,
+and the configuration and part files used for testing, along with run_tests.sh
+and its sixteen cases. The design decisions recorded in Section 1 are mine.
+
+Work Claude contributed, all of it reviewed and accepted by me:
+
+*   The empty argument vector guard in parse_args -- the FALLBACK_PROGRAM_NAME
+    constant and the args.get(...).unwrap_or(...) that replaced indexing
+    position 0 -- after randomized testing found that the original code
+    panicked in that case [3].
+*   The mechanical &String-to-&str conversion across the function signatures.
+    The decision to diverge from the assignment's stated signatures was mine;
+    Claude applied it and verified it [3].
+*   fuzz_test.py, the randomized test generator described in Section 3, and
+    the twelve thousand case campaign it ran [3].
+*   gen_output.sh, which regenerates test_output.txt [3].
+*   Drafting and editing passes on this ReadMe, including the Modules
+    subsection and the Randomized testing subsection [1], [3].
+
+--------------------------------------------------------------------------------
+Key prompts and how the interactions fit the workflow
+--------------------------------------------------------------------------------
+
+ -  All of the initial code for the program was written by me. Before I used
+    AI at all, I had a ~95% complete Lab 1 program.
+ -  The primary use of Claude was for testing my program and catching any
+    edge cases or bugs. Claude is particularly great at scanning the details
+    of an assignment (i.e., the Lab 1 instructions), finding inconsistencies,
+    developing test cases based on the requirements, discovering strange
+    edge cases, etc. I found AI to be extremely useful for this, and the
+    vast majority of my key prompts centered around this philosophy.
+ -  Claude is also great at determining what is 'idiomatic Rust'. Since it
+    has a ton of training data (textbooks, professional open-source code bases),
+    etc. it is quickly able to deduce if a pattern is well-written or not. This
+    was extremely helpful since I am still learning the best approaches for writing
+    idiomatic Rust programs coming from a primarily C++ background.
+ -  Lastly, Claude was *extremely* helpful in creating the write-up: text formatting,
+    generating a ReadMe.txt template, filling in the obvious parts, leaving blank
+    sections for my own design decisions that I needed to write, fixing grammar,
+    making sure I completed all required sections of the write-up, etc. This made
+    the Lab 1 assignment far more enjoyable as I was able to focus on the code and
+    have Claude help with documentation and testing.
