@@ -277,12 +277,13 @@ Error: 2
 
 $ cargo run -q
 ----------------------------------------------------------------
-usage: ./target/debug/lab1 <configuration_file_name> [whinge]
+usage: target/debug/lab1 <configuration_file_name> [whinge]
 Error: 1
 (exit status 1)
 
 $ sh run_tests.sh
 ----------------------------------------------------------------
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.00s
 
 PASS  no arguments prints usage
 PASS  too many arguments prints usage

@@ -3,9 +3,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::sync::atomic::Ordering;
 
-use crate::lab1::declarations::ERR_FAILED_TO_GENERATE_SCRIPT;
-
-use super::declarations::{Play, WHINGE_MODE};
+use super::declarations::{Play, WHINGE_MODE, ERR_FAILED_TO_GENERATE_SCRIPT};
 
 type PlayConfig = Vec<(String, String)>;
 

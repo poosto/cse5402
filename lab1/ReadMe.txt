@@ -14,7 +14,8 @@ Summary
 When approaching this lab, I focused on having a modular design such that individual functions and components were isolated.
 This decoupling allowed me to seamlessly follow each numbered step in the lab overview and implement functions one-by-one.
 Once all of the individual parsing and logic functions were written, putting them together in the main entry point of the program was very straightforward.
-This approach led to very little hurdles, even with minimal (practically zero) use of AI for writing code.
+This approach led to very little hurdles, even with minimal (practically zero,
+besides a few cleanups which were outlined explicitly) use of AI for writing code.
 
 The program reads a configuration file naming a play and the characters in it,
 reads each character's numbered lines from that character's own part file,
@@ -52,13 +53,16 @@ Modules
                                 lab1 module and defines usage, parse_args,
                                 recite, and main -- that is, everything that
                                 touches the user rather than the input files.
+                                The WHINGE_ARG and FALLBACK_PROGRAM_NAME
+                                constants are private to this file, since only
+                                parse_args and usage ever need them.
 
     src/lab1/mod.rs             Declares the two modules below.
 
-    src/lab1/declarations.rs    Items used by more than one file, and therefore
-                                public: the Play type, the command line argument
-                                count and index constants, the two u8 error
-                                codes, and the WHINGE_MODE static AtomicBool.
+    src/lab1/declarations.rs    The program-wide vocabulary, all public: the
+                                Play type, the command line argument count and
+                                index constants, the two u8 error codes, and the
+                                WHINGE_MODE static AtomicBool.
 
     src/lab1/script_gen.rs      Everything involved in turning files into a Play:
                                 add_script_line, grab_trimmed_file_lines,
@@ -72,12 +76,39 @@ The split follows the rule the assignment gives: items used in only one file are
 declared in that file, and only items shared across files are made public. Of
 the two types, Play crosses the module boundary (main declares one and passes it
 to script_gen) so it is public in declarations.rs, while PlayConfig never leaves
-script_gen.rs and so stays private there.
+script_gen.rs and so stays private there. The same rule keeps WHINGE_ARG and
+FALLBACK_PROGRAM_NAME private in main.rs and the configuration line index
+constants private in script_gen.rs.
 
-[DESIGN CHALLENGES FROM THE MODULE STRUCTURE -- describe any you hit, e.g. the
-namespace nesting that requires `use super::declarations::...` inside
-src/lab1/script_gen.rs versus `use lab1::declarations::...` in src/main.rs, and
-how you resolved them.]
+Two items in declarations.rs are there by instruction rather than by that rule.
+The assignment names declarations.rs as the place for the command line count
+and index constants and for the two u8 error codes, so that is where they live,
+but in practice each is used by only one file: the argument constants and
+ERR_BADLY_FORMED_COMMAND_LINE only by main.rs, and
+ERR_FAILED_TO_GENERATE_SCRIPT only by script_gen.rs. Of everything in
+declarations.rs, only Play and WHINGE_MODE genuinely have readers in both
+files. I followed the assignment here rather than relocating them, since
+grouping the program-wide vocabulary in one file is also what makes the error
+codes easy to compare against each other.
+
+In terms of the module structure, the biggest challenge was getting used to the
+different ways to declare namespaces, i.e., super vs. crate vs lab1. The same
+module can be named three ways depending on where the naming happens:
+main.rs is the crate root and so reaches the module it declares as lab1::...,
+while script_gen.rs sits inside lab1 and can say either super::declarations
+(relative, one level up to its parent) or crate::lab1::declarations (absolute,
+down from the root). super is not available in main.rs at all, since the crate
+root has no parent; trying it is a compile error.
+
+That ambiguity showed up concretely in script_gen.rs, which ended up importing
+from declarations.rs twice with two different spellings: an original
+use super::declarations::{Play, WHINGE_MODE} written by hand, and a
+use crate::lab1::declarations::ERR_FAILED_TO_GENERATE_SCRIPT added later when
+the editor auto-imported the error code for me. Both resolve to the same
+module, so the compiler was perfectly happy and nothing flagged it. I caught it
+during review and merged the two into a single use super::declarations::{...},
+choosing the relative form because it matches the example in the assignment and
+keeps the file from depending on where lab1 is mounted in the crate.
 
 --------------------------------------------------------------------------------
 Design decisions
@@ -132,8 +163,8 @@ Design decisions
     String references &str slices were used since this is much more idiomatic
     Rust and does not force heap-allocated String structs to be used. Additionally,
     instead of a match statement with a single branch, destructuring for loops were
-    used instead since they are more syntactically concise. Both of these were encouraged
-    by warnings from Clippy (especially the for-loop case).
+    used instead since they are more syntactically concise. In particular, the for-loop
+    case was a warning from Clippy.
 
 --------------------------------------------------------------------------------
 Insights, observations, and questions
@@ -208,15 +239,14 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
 5.  To run the full regression suite described in Section 3:
 
-        sh run_tests.sh
+        ./run_tests.sh
 
     It builds the program, runs all 16 test cases, prints PASS or FAIL for
     each, and exits non-zero if any case fails.
 
 Note on the package configuration: Cargo.toml specifies edition = "2021" and
 Cargo.lock is written in lockfile format version 3, both of which the 1.71.0
-tools on the lab machines accept. [KEEP THIS NOTE ONLY IF IT IS STILL TRUE OF
-WHAT YOU SUBMIT.]
+tools on the lab machines accept. 
 
 ================================================================================
 SECTION 3: TESTING
@@ -328,6 +358,53 @@ Script generation failure, error code 2:
 
 Each prints an ERROR message identifying which of the three causes occurred,
 rather than reusing one message for all of them.
+
+--------------------------------------------------------------------------------
+Randomized testing
+--------------------------------------------------------------------------------
+
+Beyond the fixed cases above, the program was exercised by a generator that
+builds random configuration and part files and checks what the program prints
+against an independent model of what the assignment requires. Each generated
+case picks zero to five characters and gives each of them one of: a well formed
+part file, a part file named but absent, a directory in place of a file, a file
+of invalid UTF-8, an empty file, a configuration line with extra tokens, a
+one-token line, or a blank line. Part file lines are drawn from well formed
+numbered lines and from every malformed shape worth trying: blank and
+whitespace-only lines, a lone token, a non-numeric first token, a negative
+number, a decimal, a forty-digit number, exactly 2^64, 0 and usize::MAX, tab
+and multi-space delimiters, CRLF endings, missing trailing newlines,
+300-character lines, and non-ASCII text in both character names and spoken
+lines.
+
+Each case is checked against nine invariants:
+
+    1. the program never panics
+    2. it always terminates promptly, never hanging
+    3. it reports error code 2 exactly when the configuration yields no
+       usable character, and succeeds otherwise
+    4. on success it prints the title followed by well formed speaker blocks
+    5. recited lines appear in nondecreasing line-number order
+    6. a speaker is announced exactly when the speaker changes, and is never
+       re-announced while still speaking
+    7. every well formed line from a readable part file is recited verbatim
+    8. no WARNING appears unless whinge mode is on
+    9. two runs on identical input produce identical output
+
+Twelve thousand cases across six seeds pass. One defect was found and fixed:
+the empty argument vector described in the insights above, where indexing
+position 0 of the argument vector panicked instead of printing the usage
+message. Every category of malformed file content the generator produced was
+already handled correctly.
+
+The generator varies file content rather than command lines, and always passes
+a valid Unicode configuration file name, so it does not reach the argument
+handling itself; the argv cases were tested by hand instead.
+
+[DECIDE WHETHER THE GENERATOR SHIPS WITH THE SUBMISSION. If it does, name the
+file here and add it to the list of contents in Section 2 step 1. If it does
+not, this subsection still describes the testing accurately, but do not refer
+to it as an enclosed file.]
 
 --------------------------------------------------------------------------------
 How to reproduce
