@@ -88,7 +88,7 @@ Design decisions
     exists and can be opened correctly for reading - if not the program should
     consider the character definition line to be badly formed, and continue to
     the next line", but it also says process_config should return an error if
-    grab_trimmed_file_lines fails. We resolved the tension by having
+    grab_trimmed_file_lines fails. I resolved the tension by having
     process_config swallow the per-character failure, skip that character, and
     count the characters whose part files did open. Only if that count is zero
     does it return ERR_FAILED_TO_GENERATE_SCRIPT, which matches the separate
@@ -100,7 +100,7 @@ Design decisions
 2.  Blank configuration lines are ignored silently rather than warned about.
     The configuration file paragraph says to read lines "ignoring any lines that
     only contain whitespace", while the introduction lists a line "with only
-    blank space" among badly formed lines that may draw a warning. We chose to
+    blank space" among badly formed lines that may draw a warning. I chose to
     ignore them: a trailing newline at the end of a file is normal, not a defect
     worth complaining about, and warning on it would produce noise on well
     formed input. Because grab_trimmed_file_lines has already trimmed every
@@ -128,22 +128,22 @@ Design decisions
     configuration with fewer than two useful lines, and a configuration with no
     readable part files -- each explain themselves.
 
-5.  Function signatures follow the assignment even where they are not the most
-    idiomatic Rust. usage, for instance, takes a &String rather than the &str
-    that Clippy would prefer, because the assignment specifies "a shared
-    (immutable) reference to a String variable". We kept the specified
-    signatures throughout.
-
-[6. IF YOU APPLIED THE match DESTRUCTURING IN recite AND process_config, SAY SO
-    HERE; IF YOU DELIBERATELY USED for-LOOP PATTERN BINDING INSTEAD, EXPLAIN
-    THAT CHOICE. As of this draft that item is still open.]
+5.  Two primary diversions from the assignment's instructions. Instead of using
+    String references &str slices were used since this is much more idiomatic
+    Rust and does not force heap-allocated String structs to be used. Additionally,
+    instead of a match statement with a single branch, destructuring for loops were
+    used instead since they are more syntactically concise. Both of these were encouraged
+    by warnings from Clippy (especially the for-loop case).
 
 --------------------------------------------------------------------------------
 Insights, observations, and questions
 --------------------------------------------------------------------------------
 
-[YOUR OWN. Some candidates from building this, keep what is true for you:]
-
+*   Through testing and securing this program from all possible edge cases, I learned
+    that the 0th argument in argv, the program name, is not required! It is always passed
+    in by [well-behaving] shells, but a bare execve syscall does not require any arguments
+    at all. Therefore, a default program name was added for this [albeit very obscure]
+    edge case.
 *   Why was a single-arm match statement preferred over a destructuring for-loop in
     both studios and this lab? The compiler warns in these cases and says the syntax can
     be reduced, and I personally agree that a destructuring for loop looks much cleaner.
@@ -153,6 +153,9 @@ Insights, observations, and questions
     without them, and Rust obviously agrees with this :). On top of that, being forced to
     handle every enumeration case with compile-time enforcement makes me feel much better
     about my code actually working at runtime.
+*   Why were String references preferred over &str? From what I understand, &str is
+    strictly better in these cases as it takes in a generic character slice that does
+    not require string heap allocation.
 *   Sorting a Vec of tuples needed no comparison function at all as the derived
     lexicographic ordering on (usize, String, String) is exactly the ordering
     the assignment asks for.
@@ -165,10 +168,6 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
         unzip lab1.zip
         cd lab1
-
-    [ADJUST THE ARCHIVE NAME AND, IF YOUR ARCHIVE UNPACKS INTO A DIFFERENT
-    DIRECTORY NAME, THE cd COMMAND. If you submit a tarball instead, the
-    command is: tar xzf lab1.tar.gz]
 
     The unpacked directory contains Cargo.toml, Cargo.lock, the src directory,
     the configuration and part files used for testing, run_tests.sh, and this
@@ -211,7 +210,7 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
         sh run_tests.sh
 
-    It builds the program, runs all [NUMBER] test cases, prints PASS or FAIL for
+    It builds the program, runs all 16 test cases, prints PASS or FAIL for
     each, and exits non-zero if any case fails.
 
 Note on the package configuration: Cargo.toml specifies edition = "2021" and
@@ -252,7 +251,7 @@ hamlet_ii_2_config.txt
     ordering and the alternation of speakers.
 
 macbeth_ii_1_config.txt
-    A second play we wrote ourselves, with part files Banquo.txt, Fleance.txt,
+    A second play I wrote myself, with part files Banquo.txt, Fleance.txt,
     Macbeth.txt, and Servant.txt. Two properties are tested here that the
     Hamlet fragment does not exercise:
 
@@ -334,11 +333,50 @@ rather than reusing one message for all of them.
 How to reproduce
 --------------------------------------------------------------------------------
 
-        sh run_tests.sh
+[meek@ssh-shell-1 lab1]$ ./run_tests.sh
+    Finished dev [unoptimized + debuginfo] target(s) in 0.12s
 
-[RUN IT ON THE LAB MACHINES AND RECORD THE RESULT HERE, e.g. "All [NUMBER]
-cases pass under Rust 1.71.0 on the CEC Linux Lab machines."]
+PASS  no arguments prints usage
+PASS  too many arguments prints usage
+PASS  unrecognized optional argument
+PASS  reference Hamlet fragment
+PASS  Macbeth fragment, lines out of order
+PASS  silent character is never announced
+PASS  blank lines and extra whitespace
+PASS  fuzzed configuration and part files
+PASS  fuzzed input warns under whinge
+PASS  fuzzed input stays quiet without whinge
+PASS  badly formed line numbers are skipped
+PASS  carriage returns are trimmed
+PASS  unreadable part file is skipped
+PASS  missing configuration file
+PASS  configuration with no character lines
+PASS  configuration with no readable parts
+
+16 passed, 0 failed
 
 test_output.txt contains captured output from a run of the reference fragment,
 the Macbeth fragment, the fuzzed configuration with and without whinge mode, the
 numeric edge cases, two failure cases, and the full suite.
+
+================================================================================
+SECTION 4: AI USAGE
+================================================================================
+
+[TO BE WRITTEN. Record here what was written by hand and what an AI assistant
+contributed, so the division of labor is on the record. The items below are
+the ones an assistant touched in this project; keep, cut, and reword them as
+you see fit, and add anything I have missed.]
+
+*   [Who wrote the program itself: the module structure, the functions,
+    the error-code scheme, and the configuration and part files used for
+    testing.]
+*   [An assistant supplied the empty-argument-vector guard in parse_args --
+    the FALLBACK_PROGRAM_NAME constant and the args.get(...).unwrap_or(...)
+    in place of indexing position 0 -- after fuzzing turned up the panic it
+    prevents.]
+*   [An assistant applied the mechanical &String-to-&str conversion across the
+    function signatures; the decision to make that change was mine.]
+*   [An assistant wrote the randomized test generator described in Section 3
+    and ran the campaign; run_tests.sh and the fixed test cases were mine.]
+*   [Editorial passes on this ReadMe: drafting and formatting.]

@@ -20,7 +20,7 @@ const LINE_TOKEN_COUNT: usize = 2;
 // read_line reports zero bytes read only at end of file
 const BYTES_READ_AT_EOF: usize = 0;
 
-fn add_script_line(play_lines: &mut Play, character_line: &String, character_name: &String) {
+fn add_script_line(play_lines: &mut Play, character_line: &str, character_name: &str) {
     if character_line.is_empty() {
         return;
     } 
@@ -43,7 +43,7 @@ fn add_script_line(play_lines: &mut Play, character_line: &String, character_nam
     }
 }
 
-fn grab_trimmed_file_lines(file_name: &String, file_lines: &mut Vec<String>) -> Result<(), u8> {
+fn grab_trimmed_file_lines(file_name: &str, file_lines: &mut Vec<String>) -> Result<(), u8> {
     match File::open(file_name) {
         Err(e) => {
             if WHINGE_MODE.load(Ordering::SeqCst) {
@@ -107,7 +107,7 @@ fn process_config(play_lines: &mut Play, play_config: &PlayConfig) -> Result<(),
     Ok(())
 }
 
-fn add_config(config_line: &String, play_config: &mut PlayConfig) {
+fn add_config(config_line: &str, play_config: &mut PlayConfig) {
     let words: Vec<&str> = config_line.split_whitespace().collect();
 
     if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
@@ -119,7 +119,7 @@ fn add_config(config_line: &String, play_config: &mut PlayConfig) {
     }
 }
 
-fn read_config(config_file: &String, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
+fn read_config(config_file: &str, play_title: &mut String, play_config: &mut PlayConfig) -> Result<(), u8> {
     let mut lines = Vec::<String>::new();
 
     // unlike a character's part file, a missing configuration file is fatal
@@ -145,7 +145,7 @@ fn read_config(config_file: &String, play_title: &mut String, play_config: &mut 
     Ok(())
 }
 
-pub fn script_gen(config_file: &String, play_title: &mut String, play_lines: &mut Play) -> Result<(), u8> {
+pub fn script_gen(config_file: &str, play_title: &mut String, play_lines: &mut Play) -> Result<(), u8> {
     let mut config = PlayConfig::new(); 
     read_config(config_file, play_title, &mut config)?;
 

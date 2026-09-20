@@ -13,7 +13,7 @@ const WHINGE_ARG: &str = "whinge";
 // a position that may not exist.
 const FALLBACK_PROGRAM_NAME: &str = "lab1";
 
-fn usage(program_name: &String) {
+fn usage(program_name: &str) {
     println!("usage: {} <configuration_file_name> [whinge]", program_name);
 }
 
@@ -24,8 +24,9 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
         args.push(arg); 
     }
 
-    let fallback_program_name = String::from(FALLBACK_PROGRAM_NAME);
-    let program_name = args.get(ARGS_IDX_PROGRAM_NAME).unwrap_or(&fallback_program_name);
+    let program_name = args.get(ARGS_IDX_PROGRAM_NAME)
+        .map(String::as_str)
+        .unwrap_or(FALLBACK_PROGRAM_NAME);
 
     // if too few or too many args
     if args.len() < MIN_COMMAND_LINE_ARGS || args.len() > MAX_COMMAND_LINE_ARGS {
@@ -50,7 +51,7 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
     Ok(())
 }
 
-fn recite(play_title: &String, play: &Play) {
+fn recite(play_title: &str, play: &Play) {
     println!("{}", play_title);
 
     let mut prev_character_name = String::new();
