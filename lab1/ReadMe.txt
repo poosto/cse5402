@@ -11,11 +11,14 @@ Team members:
 Summary
 --------------------------------------------------------------------------------
 
-When approaching this lab, I focused on having a modular design such that individual functions and components were isolated.
-This decoupling allowed me to seamlessly follow each numbered step in the lab overview and implement functions one-by-one.
-Once all of the individual parsing and logic functions were written, putting them together in the main entry point of the program was very straightforward.
-This approach led to very little hurdles, even with minimal (practically zero,
-besides a few cleanups which were outlined explicitly) use of AI for writing code.
+When approaching this lab, I focused on having a modular design such that
+individual functions and components were isolated. This decoupling allowed me to
+seamlessly follow each numbered step in the lab overview and implement functions
+one-by-one. Once all of the individual parsing and logic functions were written,
+putting them together in the main entry point of the program was very
+straightforward. This approach led to very little hurdles, even with minimal
+(practically zero, besides a few cleanups which were outlined explicitly) use of
+AI for writing code.
 
 The program reads a configuration file naming a play and the characters in it,
 reads each character's numbered lines from that character's own part file,
@@ -64,8 +67,8 @@ Modules
                                 index constants, the two u8 error codes, and the
                                 WHINGE_MODE static AtomicBool.
 
-    src/lab1/script_gen.rs      Everything involved in turning files into a Play:
-                                add_script_line, grab_trimmed_file_lines,
+    src/lab1/script_gen.rs      Everything involved in turning files into a
+                                Play: add_script_line, grab_trimmed_file_lines,
                                 process_config, add_config, read_config, and the
                                 public script_gen entry point. The PlayConfig
                                 type and the index constants live here and are
@@ -161,32 +164,34 @@ Design decisions
 
 5.  Two primary diversions from the assignment's instructions. Instead of using
     String references &str slices were used since this is much more idiomatic
-    Rust and does not force heap-allocated String structs to be used. Additionally,
-    instead of a match statement with a single branch, destructuring for loops were
-    used instead since they are more syntactically concise. In particular, the for-loop
-    case was a warning from Clippy.
+    Rust and does not force heap-allocated String structs to be used.
+    Additionally, instead of a match statement with a single branch,
+    destructuring for loops were used instead since they are more syntactically
+    concise. In particular, the for-loop case was a warning from Clippy.
 
 --------------------------------------------------------------------------------
 Insights, observations, and questions
 --------------------------------------------------------------------------------
 
-*   Through testing and securing this program from all possible edge cases, I learned
-    that the 0th argument in argv, the program name, is not required! It is always passed
-    in by [well-behaving] shells, but a bare execve syscall does not require any arguments
-    at all. Therefore, a default program name was added for this [albeit very obscure]
-    edge case.
-*   Why was a single-arm match statement preferred over a destructuring for-loop in
-    both studios and this lab? The compiler warns in these cases and says the syntax can
-    be reduced, and I personally agree that a destructuring for loop looks much cleaner.
-    From what I understand, they should compile down to the same assembly regardless.
-*   The error-handling syntax of Rust is quite enjoyable to work with, especially the
-    ? operator. While I think exceptions have their use cases, I generally prefer to work
-    without them, and Rust obviously agrees with this :). On top of that, being forced to
-    handle every enumeration case with compile-time enforcement makes me feel much better
-    about my code actually working at runtime.
-*   Why were String references preferred over &str? From what I understand, &str is
-    strictly better in these cases as it takes in a generic character slice that does
-    not require string heap allocation.
+*   Through testing and securing this program from all possible edge cases, I
+    learned that the 0th argument in argv, the program name, is not required! It
+    is always passed in by [well-behaving] shells, but a bare execve syscall
+    does not require any arguments at all. Therefore, a default program name was
+    added for this [albeit very obscure] edge case.
+*   Why was a single-arm match statement preferred over a destructuring for-loop
+    in both studios and this lab? The compiler warns in these cases and says the
+    syntax can be reduced, and I personally agree that a destructuring for loop
+    looks much cleaner. From what I understand, they should compile down to the
+    same assembly regardless.
+*   The error-handling syntax of Rust is quite enjoyable to work with,
+    especially the ? operator. While I think exceptions have their use cases, I
+    generally prefer to work without them, and Rust obviously agrees with this
+    :). On top of that, being forced to handle every enumeration case with
+    compile-time enforcement makes me feel much better about my code actually
+    working at runtime.
+*   Why were String references preferred over &str? From what I understand, &str
+    is strictly better in these cases as it takes in a generic character slice
+    that does not require string heap allocation.
 *   Sorting a Vec of tuples needed no comparison function at all as the derived
     lexicographic ordering on (usize, String, String) is exactly the ordering
     the assignment asks for.
@@ -248,7 +253,7 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
 Note on the package configuration: Cargo.toml specifies edition = "2021" and
 Cargo.lock is written in lockfile format version 3, both of which the 1.71.0
-tools on the lab machines accept. 
+tools on the lab machines accept.
 
 ================================================================================
 SECTION 3: TESTING
@@ -515,14 +520,15 @@ Key prompts and how the interactions fit the workflow
     developing test cases based on the requirements, discovering strange
     edge cases, etc. I found AI to be extremely useful for this, and the
     vast majority of my key prompts centered around this philosophy.
- -  Claude is also great at determining what is 'idiomatic Rust'. Since it
-    has a ton of training data (textbooks, professional open-source code bases),
-    etc. it is quickly able to deduce if a pattern is well-written or not. This
-    was extremely helpful since I am still learning the best approaches for writing
+ -  Claude is also great at determining what is 'idiomatic Rust'. Since it has a
+    ton of training data (textbooks, professional open-source code bases), etc.
+    it is quickly able to deduce if a pattern is well-written or not. This was
+    extremely helpful since I am still learning the best approaches for writing
     idiomatic Rust programs coming from a primarily C++ background.
- -  Lastly, Claude was *extremely* helpful in creating the write-up: text formatting,
-    generating a ReadMe.txt template, filling in the obvious parts, leaving blank
-    sections for my own design decisions that I needed to write, fixing grammar,
-    making sure I completed all required sections of the write-up, etc. This made
-    the Lab 1 assignment far more enjoyable as I was able to focus on the code and
-    have Claude help with documentation and testing.
+ -  Lastly, Claude was *extremely* helpful in creating the write-up: text
+    formatting, generating a ReadMe.txt template, filling in the obvious parts,
+    leaving blank sections for my own design decisions that I needed to write,
+    fixing grammar, making sure I completed all required sections of the
+    write-up, etc. This made the Lab 1 assignment far more enjoyable as I was
+    able to focus on the code and have Claude help with documentation and
+    testing.
