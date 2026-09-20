@@ -31,6 +31,8 @@ fn main() {
     let foo_one_prime = Foo::<String>::new("hi", Default::default());
     let foo_two_prime = Foo::<usize>::new(45_usize, Default::default());
 
+    let x: u16 = Default::default();
+
     let foo_three = Foo::<String>{ one: "hi".to_string(), ..Foo::<String>::default() };
 
     println!("{:?} {:?}\n{:?} {:?}", foo_one, foo_two, foo_one_prime, foo_two_prime);
