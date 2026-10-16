@@ -21,15 +21,12 @@ fn main() {
             let prefix = if idx % 2 == 0 { "[A]" } else { "[B]" };
 
             thread::spawn(move || {
-                loop {
-                    // Having this in its own let is important here
-                    // If it is part of the match, the lock is held even when printing
-                    // If the expression was in a while loop instead, the lock would be held until the
-                    // channel closed, and never released!
-                    let msg = rx.lock().expect("Unable to acquire mutex").recv();
+                let guard = rx.lock().expect("Unable to acquire mutex");
 
-                    match msg {
+                loop {
+                    match guard.recv() {
                         Ok(msg) if msg.starts_with(prefix) => println!("{msg}"),
+                        Ok(msg) => println!("[delegated] {msg}"),
                         Err(_) => break,
                     }
                 }

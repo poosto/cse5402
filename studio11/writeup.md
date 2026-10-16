@@ -441,3 +441,82 @@ Note that some messages are missing, since some receiver threads will receive me
 and drop them.
 
 19) *Compile and run your program, and as the answer to this exercise please show the output that was produced.*
+```rust
+use std::sync::{Arc, Mutex, mpsc};
+use std::thread;
+
+fn send_element<T>(tx: &mpsc::Sender<T>, element: T) {
+    tx.send(element).expect("Failed to send to channel");
+    thread::yield_now();
+}
+
+fn send_elements<T: Clone>(tx: &mpsc::Sender<T>, elements: &[T]) {
+    elements.iter().for_each(|e| send_element(tx, e.to_owned()));
+}
+
+fn main() {
+    let (tx, rx) = mpsc::channel::<String>();
+
+    let rx = Arc::new(Mutex::new(rx));
+
+    let handles: Vec<_> = (0..=3)
+        .map(|idx| {
+            let rx = rx.clone();
+            let prefix = if idx % 2 == 0 { "[A]" } else { "[B]" };
+
+            thread::spawn(move || {
+                let guard = rx.lock().expect("Unable to acquire mutex");
+
+                loop {
+                    match guard.recv() {
+                        Ok(msg) if msg.starts_with(prefix) => println!("{msg}"),
+                        Ok(msg) => println!("[delegated] {msg}"),
+                        Err(_) => break,
+                    }
+                }
+            })
+        })
+        .collect();
+
+    let words = vec![
+        String::from("[A] hello"),
+        String::from("[A] there"),
+        String::from("[A] how"),
+        String::from("[A] are you?"),
+    ];
+
+    for idx in 0..=3 {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            let prefix = if idx < 1 { "[A]" } else { "[B]" };
+            send_element(&tx, format!("{prefix} Hello from Thread {idx}"));
+            send_element(&tx, format!("{prefix} Hello AGAIN from Thread {idx}"));
+        });
+    }
+
+    send_elements(&tx, &words);
+    drop(tx);
+
+    handles
+        .into_iter()
+        .for_each(|t| t.join().expect("Thread failed to join"));
+}
+```
+```shell
+❯ cargo run
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.00s
+     Running `target/debug/rustchannels`
+[delegated] [B] Hello from Thread 1
+[A] Hello from Thread 0
+[delegated] [B] Hello from Thread 2
+[A] hello
+[delegated] [B] Hello from Thread 3
+[delegated] [B] Hello AGAIN from Thread 1
+[A] Hello AGAIN from Thread 0
+[delegated] [B] Hello AGAIN from Thread 2
+[A] there
+[delegated] [B] Hello AGAIN from Thread 3
+[A] how
+[A] are you?
+```
+
