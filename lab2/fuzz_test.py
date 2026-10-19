@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO: adapt for Lab 2 (script files with [scene] directives, entrances/exits, whinge output on stderr).
 """Randomized fuzzer for CSE 5402 Lab 1.
 
 Generates random configuration files and part files (including malformed,

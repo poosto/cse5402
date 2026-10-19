@@ -1,4 +1,0 @@
-CRLF Line Endings Test Fragment
-Sentinel Sentinel.txt
-King King.txt
-

@@ -1,3 +1,5 @@
+// TODO: add a file header comment explaining this module's purpose (lost 1 pt on Lab 1 for missing it).
+
 use std::sync::atomic::AtomicBool;
 
 pub type Play = Vec<(usize, String, String)>;

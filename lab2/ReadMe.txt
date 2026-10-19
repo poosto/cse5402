@@ -1,3 +1,5 @@
+TODO: update this ReadMe for Lab 2 (title, overview, build/run steps, testing, AI citations) and add the Structs, Return Wrapper, Scene Fragments, and Testing subsections the spec asks for.
+
 ================================================================================
 SECTION 1: IDENTIFICATION AND DESIGN
 ================================================================================

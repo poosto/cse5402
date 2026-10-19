@@ -1,3 +1,6 @@
+// TODO: add a file header comment explaining this module's purpose (grader feedback from Lab 1).
+// TODO: add a summary comment above every function (grader feedback from Lab 1).
+
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;

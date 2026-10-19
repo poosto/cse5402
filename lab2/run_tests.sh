@@ -1,4 +1,5 @@
 #!/bin/sh
+# TODO: adapt for Lab 2 (binary name, script files instead of config files, new inputs). Lab 1 inputs now live in ../lab1.
 #
 # run_tests.sh - regression tests for CSE 5402 Lab 1.
 #

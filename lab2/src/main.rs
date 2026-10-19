@@ -1,3 +1,7 @@
+// TODO: add a file header comment explaining this file's purpose (grader feedback from Lab 1).
+// TODO: add a summary comment above every function (grader feedback from Lab 1).
+// TODO: replace the long `use ...declarations::{...}` list with a glob import (`use lab2::declarations::*;`) when every item is used (grader feedback from Lab 1).
+
 pub mod lab1;
 
 use std::{env, sync::atomic::Ordering};
