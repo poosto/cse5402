@@ -1,0 +1,305 @@
+================================================================
+CSE 5402 Fall 2025 Lab 1 - captured output from a test run
+================================================================
+
+$ cargo run -q hamlet_ii_2_config.txt
+----------------------------------------------------------------
+Hamlet Prince of Denmark ACT II Scene II A room in the Castle by William Shakespeare
+
+King.
+Welcome, dear Rosencrantz and Guildenstern!
+Moreover that we much did long to see you,
+The need we have to use you did provoke
+Our hasty sending. Something have you heard
+Of Hamlet's transformation; so I call it,
+Since nor the exterior nor the inward man
+Resembles that it was. What it should be,
+More than his father's death, that thus hath put him
+So much from the understanding of himself,
+I cannot dream of: I entreat you both
+That, being of so young days brought up with him,
+And since so neighbour'd to his youth and humour,
+That you vouchsafe your rest here in our court
+Some little time: so by your companies
+To draw him on to pleasures, and to gather,
+So much as from occasion you may glean,
+Whether aught, to us unknown, afflicts him thus,
+That, open'd, lies within our remedy.
+
+Queen.
+Good gentlemen, he hath much talk'd of you,
+And sure I am two men there are not living
+To whom he more adheres. If it will please you
+To show us so much gentry and good-will
+As to expend your time with us awhile,
+For the supply and profit of our hope,
+Your visitation shall receive such thanks
+As fits a king's remembrance.
+
+Rosencrantz.
+Both your majesties
+Might, by the sovereign power you have of us,
+Put your dread pleasures more into command
+Than to entreaty.
+
+Guildenstern.
+We both obey,
+And here give up ourselves, in the full bent,
+To lay our service freely at your feet,
+To be commanded.
+
+King.
+Thanks, Rosencrantz and gentle Guildenstern.
+
+Queen.
+Thanks, Guildenstern and gentle Rosencrantz:
+And I beseech you instantly to visit
+My too-much-changed son.--Go, some of you,
+And bring these gentlemen where Hamlet is.
+
+Guildenstern.
+Heavens make our presence and our practices
+Pleasant and helpful to him!
+
+Queen.
+Ay, amen!
+
+$ cargo run -q macbeth_ii_1_config.txt
+----------------------------------------------------------------
+Macbeth ACT II Scene I Court of Macbeth's castle by William Shakespeare
+
+Banquo.
+How goes the night, boy?
+
+Fleance.
+The moon is down; I have not heard the clock.
+
+Banquo.
+And she goes down at twelve.
+
+Fleance.
+I take't, 'tis later, sir.
+
+Banquo.
+Hold, take my sword.--There's husbandry in heaven;
+Their candles are all out.--Take thee that too.
+A heavy summons lies like lead upon me,
+And yet I would not sleep: merciful powers,
+Restrain in me the cursed thoughts that nature
+Gives way to in repose!--Give me my sword.--
+Who's there?
+
+Macbeth.
+A friend.
+
+Banquo.
+What, sir! not yet at rest? The king's a-bed:
+He hath been in unusual pleasure and
+Sent forth great largess to your offices.
+
+Macbeth.
+Being unprepar'd,
+Our will became the servant to defect,
+Which else should free have wrought.
+
+$ cargo run -q fuzz_config.txt whinge
+----------------------------------------------------------------
+WARNING: Configuration line "Rosencrantz" has 1 tokens, expected 2
+WARNING: Configuration line "Queen Queen.txt these trailing tokens should be ignored" has 8 tokens, expected 2
+WARNING: Failed to open file no_such_part_file.txt (No such file or directory (os error 2))
+WARNING: Skipping character BadCharacter whose part file no_such_part_file.txt could not be read
+WARNING: Skipping Messenger's line because its first token "notanumber" does not represent a valid usize value
+WARNING: Skipping Messenger's line because its first token "-5" does not represent a valid usize value
+WARNING: Skipping Messenger's line "onlyonetoken" because it has only one token
+WARNING: Skipping Messenger's line because its first token "99999999999999999999999999999" does not represent a valid usize value
+Fuzz Test: Hamlet ACT II Scene II with a deliberately messy configuration
+
+King.
+Welcome, dear Rosencrantz and Guildenstern!
+Moreover that we much did long to see you,
+The need we have to use you did provoke
+Our hasty sending. Something have you heard
+Of Hamlet's transformation; so I call it,
+Since nor the exterior nor the inward man
+Resembles that it was. What it should be,
+More than his father's death, that thus hath put him
+So much from the understanding of himself,
+I cannot dream of: I entreat you both
+That, being of so young days brought up with him,
+And since so neighbour'd to his youth and humour,
+That you vouchsafe your rest here in our court
+Some little time: so by your companies
+To draw him on to pleasures, and to gather,
+So much as from occasion you may glean,
+Whether aught, to us unknown, afflicts him thus,
+That, open'd, lies within our remedy.
+
+Queen.
+Good gentlemen, he hath much talk'd of you,
+And sure I am two men there are not living
+To whom he more adheres. If it will please you
+To show us so much gentry and good-will
+As to expend your time with us awhile,
+For the supply and profit of our hope,
+Your visitation shall receive such thanks
+As fits a king's remembrance.
+
+Rosencrantz.
+Both your majesties
+Might, by the sovereign power you have of us,
+Put your dread pleasures more into command
+Than to entreaty.
+
+Guildenstern.
+We both obey,
+And here give up ourselves, in the full bent,
+To lay our service freely at your feet,
+To be commanded.
+
+King.
+Thanks, Rosencrantz and gentle Guildenstern.
+
+Messenger.
+A tie with another line number, to test stable ordering.
+
+Queen.
+Thanks, Guildenstern and gentle Rosencrantz:
+And I beseech you instantly to visit
+My too-much-changed son.--Go, some of you,
+And bring these gentlemen where Hamlet is.
+
+Guildenstern.
+Heavens make our presence and our practices
+Pleasant and helpful to him!
+
+Queen.
+Ay, amen!
+
+Messenger.
+A messenger enters with deliberately messy lines.
+This line has extra whitespace after its line number.
+Leading whitespace before the line number.
+
+$ cargo run -q fuzz_config.txt        (same input, no whinge)
+----------------------------------------------------------------
+Fuzz Test: Hamlet ACT II Scene II with a deliberately messy configuration
+
+King.
+Welcome, dear Rosencrantz and Guildenstern!
+Moreover that we much did long to see you,
+The need we have to use you did provoke
+Our hasty sending. Something have you heard
+Of Hamlet's transformation; so I call it,
+Since nor the exterior nor the inward man
+Resembles that it was. What it should be,
+More than his father's death, that thus hath put him
+So much from the understanding of himself,
+I cannot dream of: I entreat you both
+That, being of so young days brought up with him,
+And since so neighbour'd to his youth and humour,
+That you vouchsafe your rest here in our court
+Some little time: so by your companies
+To draw him on to pleasures, and to gather,
+So much as from occasion you may glean,
+Whether aught, to us unknown, afflicts him thus,
+That, open'd, lies within our remedy.
+
+Queen.
+Good gentlemen, he hath much talk'd of you,
+And sure I am two men there are not living
+To whom he more adheres. If it will please you
+To show us so much gentry and good-will
+As to expend your time with us awhile,
+For the supply and profit of our hope,
+Your visitation shall receive such thanks
+As fits a king's remembrance.
+
+Rosencrantz.
+Both your majesties
+Might, by the sovereign power you have of us,
+Put your dread pleasures more into command
+Than to entreaty.
+
+Guildenstern.
+We both obey,
+And here give up ourselves, in the full bent,
+To lay our service freely at your feet,
+To be commanded.
+
+King.
+Thanks, Rosencrantz and gentle Guildenstern.
+
+Messenger.
+A tie with another line number, to test stable ordering.
+
+Queen.
+Thanks, Guildenstern and gentle Rosencrantz:
+And I beseech you instantly to visit
+My too-much-changed son.--Go, some of you,
+And bring these gentlemen where Hamlet is.
+
+Guildenstern.
+Heavens make our presence and our practices
+Pleasant and helpful to him!
+
+Queen.
+Ay, amen!
+
+Messenger.
+A messenger enters with deliberately messy lines.
+This line has extra whitespace after its line number.
+Leading whitespace before the line number.
+
+$ cargo run -q numeric_config.txt whinge
+----------------------------------------------------------------
+WARNING: Skipping Ghost's line because its first token "1_0" does not represent a valid usize value
+WARNING: Skipping Ghost's line because its first token "3.5" does not represent a valid usize value
+WARNING: Skipping Ghost's line because its first token "0x10" does not represent a valid usize value
+WARNING: Skipping Ghost's line "6" because it has only one token
+Numeric Edge Cases Test Fragment
+
+Ghost.
+A leading plus sign is accepted by parse::<usize>.
+Leading zeros still parse as a usize.
+Text with	an	interior	tab is preserved as written.
+The largest usize value on a 64-bit machine.
+
+$ cargo run -q no_valid_parts_config.txt whinge
+----------------------------------------------------------------
+WARNING: Configuration line "Ophelia" has 1 tokens, expected 2
+WARNING: Failed to open file no_such_file.txt (No such file or directory (os error 2))
+WARNING: Skipping character Hamlet whose part file no_such_file.txt could not be read
+WARNING: Failed to open file also_missing.txt (No such file or directory (os error 2))
+WARNING: Skipping character Horatio whose part file also_missing.txt could not be read
+ERROR: No character in the configuration had a part file that could be read
+Error: 2
+(exit status 1)
+
+$ cargo run -q
+----------------------------------------------------------------
+usage: target/debug/lab1 <configuration_file_name> [whinge]
+Error: 1
+(exit status 1)
+
+$ sh run_tests.sh
+----------------------------------------------------------------
+    Finished dev [unoptimized + debuginfo] target(s) in 0.21s
+
+PASS  no arguments prints usage
+PASS  too many arguments prints usage
+PASS  unrecognized optional argument
+PASS  reference Hamlet fragment
+PASS  Macbeth fragment, lines out of order
+PASS  silent character is never announced
+PASS  blank lines and extra whitespace
+PASS  fuzzed configuration and part files
+PASS  fuzzed input warns under whinge
+PASS  fuzzed input stays quiet without whinge
+PASS  badly formed line numbers are skipped
+PASS  carriage returns are trimmed
+PASS  unreadable part file is skipped
+PASS  missing configuration file
+PASS  configuration with no character lines
+PASS  configuration with no readable parts
+
+16 passed, 0 failed
