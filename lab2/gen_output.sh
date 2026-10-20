@@ -93,6 +93,9 @@ cargo build -q || exit 1
     emit 'cd test_inputs && cargo run -q missing_part_script.txt whinge' \
          in_inputs cargo run -q missing_part_script.txt whinge
 
+    emit 'cd test_inputs && cargo run -q junk_config_script.txt whinge' \
+         in_inputs cargo run -q junk_config_script.txt whinge
+
     emit 'sh run_tests.sh' \
          sh run_tests.sh
 

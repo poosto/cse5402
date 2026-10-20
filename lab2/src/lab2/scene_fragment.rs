@@ -83,7 +83,8 @@ impl SceneFragment {
     }
 
     // Read the configuration file and add each non-blank line to the play config.
-    // Return an error if the file cannot be read or has no non-blank lines.
+    // Return an error if the file cannot be read, has no non-blank lines,
+    // or has no valid character lines.
     fn read_config(config_file: &str, play_config: &mut PlayConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
@@ -96,6 +97,7 @@ impl SceneFragment {
         // Lines are already trimmed, but this also removes empty whitespace lines
         lines.retain(|line| !line.is_empty());
 
+        // Check if a configuration file is empty
         if lines.is_empty() {
             eprintln!("ERROR: Configuration file {} cannot be empty", config_file);
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
@@ -103,6 +105,17 @@ impl SceneFragment {
 
         for line in &lines {
             Self::add_config(line, play_config);
+        }
+
+        // Check if a configuration file only had junk
+        // i.e., instead of being actually empty, it only has semantically meaningless lines
+        // TODO: document this decision
+        if play_config.is_empty() {
+            eprintln!(
+                "ERROR: Configuration file {} must have at least one valid line",
+                config_file
+            );
+            return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
         Ok(())

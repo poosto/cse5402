@@ -191,6 +191,9 @@ check "configuration before any [scene] title"  2 "!." "must give a \[scene\] ti
 check "missing configuration file"              2 "!." "^ERROR: Failed to read configuration file" missing_config_script.txt
 check "[Scene] is not the [scene] directive"    2 "!." "^ERROR: Failed to read configuration file \[Scene\]" wrong_case_script.txt
 check "empty configuration file"                2 "!." "^ERROR: Configuration file .* cannot be empty" empty_config_script.txt
+check "configuration of only malformed lines"  2 "!." "^ERROR: Configuration file junk_config.txt must have at least one valid line" junk_config_script.txt
+check "malformed-only configuration whinges"   2 "!." "^WARNING: Configuration line \"Alone\" has 1 tokens" junk_config_script.txt whinge
+check "malformed-only configuration is quiet"  2 "!." "!WARNING" junk_config_script.txt
 check "missing part file"                       2 "!." "^ERROR: Failed to read part file no_such_part.txt" missing_part_script.txt
 check "part file is a directory"                2 "!." "^ERROR: Failed to read part file a_directory" dir_part_script.txt
 check "part file is not UTF-8"                  2 "!." "^ERROR: Failed to read part file binary.txt" binary_part_script.txt

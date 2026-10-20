@@ -106,20 +106,27 @@ class Model:
                 self.warnings += 1   # first token is not a usize
                 continue
             lines.append((number, trim(line[match.end():])))
-        lines.sort()
+        # sort by line number only, and Python's sort is stable like Rust's
+        # sort_by_key, so lines that share a number keep their file order
+        lines.sort(key=lambda entry: entry[0])
         return {"name": name, "lines": lines, "index": 0}
 
     def load_fragment(self, config_file, title):
         lines = [line for line in read_lines(self.path(config_file)) if line]
         if not lines:
             raise Failed(config_file)
-        players = []
+        characters = []
         for line in lines:
             words = split_ws(line)
             if len(words) != 2:
                 self.warnings += 1
             if len(words) >= 2:
-                players.append(self.load_player(words[0], words[1]))
+                characters.append((words[0], words[1]))
+        # a config whose lines are all malformed names no characters, so it fails
+        # like an empty one, before any part file is read
+        if not characters:
+            raise Failed(config_file)
+        players = [self.load_player(name, part) for name, part in characters]
         # silent players first, then by first line number; Python's sort is
         # stable, like Rust's Vec::sort
         players.sort(key=lambda p: (1, p["lines"][0][0]) if p["lines"] else (0,))
