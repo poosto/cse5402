@@ -10,7 +10,7 @@ use std::sync::atomic::Ordering;
 type ScriptConfig = Vec<(bool, String)>;
 type Fragments = Vec<SceneFragment>;
 
-// TODO: document Clippy suggestion for Default rather than new since no params
+// Clippy suggests Default when new takes no parameters (new_without_default)
 #[derive(Default)]
 pub struct Play {
     fragments: Fragments,

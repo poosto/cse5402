@@ -59,7 +59,6 @@ fn parse_args(script_file_name: &mut String) -> Result<(), u8> {
     Ok(())
 }
 
-// TODO: document the run() design choice in the ReadMe's Return Wrapper subsection: main's logic lives in run() -> Result<(), u8> so it can use ? (which can't target ReturnWrapper on stable Rust, since the Try/FromResidual traits are unstable), and main wraps run()'s single Result with ReturnWrapper::new instead of unwrapping and rewrapping each Ok/Err.
 // Do the program's main work. Parse the arguments, prepare the play, and recite it.
 // Return the first error code that comes up, otherwise an empty Ok.
 fn run() -> Result<(), u8> {

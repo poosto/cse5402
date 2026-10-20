@@ -36,9 +36,6 @@ impl SceneFragment {
         for (character_name, character_file_name) in play_config {
             let mut player = Player::new(character_name);
 
-            // TODO: document in ReadMe.txt that an unreadable part file is now fatal (Lab 2 spec: process_config returns an error
-            // if prepare fails) whereas Lab 1 skipped it with a warning (e.g. ../lab1/dir_part_config.txt); also that prepare
-            // is called before the push rather than after, as the spec words it.
             if player.prepare(character_file_name).is_err() {
                 eprintln!(
                     "ERROR: Failed to read part file {} for character {}",
@@ -105,7 +102,6 @@ impl SceneFragment {
 
         // Check if a configuration file only had junk
         // i.e., instead of being actually empty, it only has semantically meaningless lines
-        // TODO: document this decision
         if play_config.is_empty() {
             eprintln!(
                 "ERROR: Configuration file {} must have at least one valid line",
@@ -142,7 +138,6 @@ impl SceneFragment {
             // If players share a line number, the player sorted earlier in the players vector
             // speaks first. Players are sorted by first line number, and players tied on their
             // first line keep their config file order. This matches how ties keep file order within a player.
-            // TODO: document this
             let next_line = self
                 .players
                 .iter()
