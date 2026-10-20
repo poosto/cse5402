@@ -51,6 +51,10 @@ impl SceneFragment {
 
         self.players.sort();
 
+        // TODO: decide whether a fragment with no players is an error (check the spec): a config whose character lines are all
+        // malformed (e.g. a title then "A") now prints just the title and exits 0, whereas Lab 1 failed with "No character in
+        // the configuration had a part file that could be read" and exit code 2; document the decision in ReadMe.txt.
+
         Ok(())
     }
 
@@ -124,6 +128,10 @@ impl SceneFragment {
             // Map Some values to include the index of the Player for later
             // (we can't hold a ref to it and call speak())
             // Take the min of the tuple
+            // TODO: decide how to order lines that share a line number across players (check the spec): min() on (line, idx)
+            // speaks the earlier player in sorted order first, which for tied first lines is config order (stable sort), so
+            // ../lab1/crlf_config.txt now puts Sentinel's line 1 before King's, whereas Lab 1 put King first (ordered by
+            // name); document the decision in ReadMe.txt.
             let next_line = self
                 .players
                 .iter()
@@ -179,11 +187,18 @@ impl SceneFragment {
     }
 
     // Reusable across enter and enter_all
-    fn enter_with(&self, other: &[Player]) {
+    // follows_fragment is true when an earlier fragment's output precedes this one
+    fn enter_with(&self, other: &[Player], follows_fragment: bool) {
         let has_title = !self.title.trim().is_empty();
         let mut entering = self.players_not_in(other).peekable();
 
         if has_title {
+            // a blank line separates a new scene's title from the previous fragment's output,
+            // but the first fragment's title starts the script, so nothing comes before it
+            if follows_fragment {
+                println!();
+            }
+
             println!("{}", self.title);
 
             // a blank line separates the title from the entrances (as in hamlet_act_ii_scene_1.txt);
@@ -209,12 +224,12 @@ impl SceneFragment {
     }
 
     pub fn enter(&self, other: &Self) {
-        self.enter_with(&other.players);
+        self.enter_with(&other.players, true);
     }
 
     pub fn enter_all(&self) {
         // Everyone enters, so no shared players, thus the slice is empty
-        self.enter_with(&[]);
+        self.enter_with(&[], false);
     }
 
     pub fn exit(&self, other: &Self) {
