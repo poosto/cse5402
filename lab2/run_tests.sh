@@ -10,7 +10,7 @@
 #
 # Usage: sh run_tests.sh
 
-LAB1=./target/debug/lab1
+LAB1=./target/debug/lab2
 PASSES=0
 FAILURES=0
 

@@ -2,11 +2,11 @@
 // TODO: add a summary comment above every function (grader feedback from Lab 1).
 // TODO: replace the long `use ...declarations::{...}` list with a glob import (`use lab2::declarations::*;`) when every item is used (grader feedback from Lab 1).
 
-pub mod lab1;
+pub mod lab2;
 
 use std::{env, sync::atomic::Ordering};
 
-use lab1::{declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE}, script_gen::script_gen};
+use lab2::{declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE}, script_gen::script_gen};
 
 // The text a user supplies as the optional third argument to turn on complaints
 // about problems the program handles rather than failing on.
@@ -15,7 +15,7 @@ const WHINGE_ARG: &str = "whinge";
 // env::args() yields nothing at all when the program is started with an empty
 // argument vector, so the usage message falls back to this rather than indexing
 // a position that may not exist.
-const FALLBACK_PROGRAM_NAME: &str = "lab1";
+const FALLBACK_PROGRAM_NAME: &str = "lab2";
 
 fn usage(program_name: &str) {
     println!("usage: {} <configuration_file_name> [whinge]", program_name);
