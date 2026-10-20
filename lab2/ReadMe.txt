@@ -158,17 +158,20 @@ Design decisions
     concise. In particular, the for-loop case was a warning from Clippy.
 
 6.  A configuration file that holds only malformed lines is an error.
-    TODO: explain this decision. SceneFragment::read_config now fails with
-    "Configuration file X must have at least one valid line" (exit code 2)
-    when a file is not empty but none of its lines has two tokens (see
-    test_inputs/junk_config.txt). Say why you chose an error over reciting a
-    fragment with no players, and how this matches the Lab 1 rule that a
-    configuration needs at least one valid character definition.
+    This matches the Lab 1 rule that a configuration needs at least one
+    valid character definition (the Lab 2 spec does not restate this rule).
+    The Lab 2 spec explicitly states that an empty script file is an error,
+    and Lab 1 made an empty configuration file an error. From the end user's
+    perspective, an empty configuration file is identical to one with only
+    malformed lines, since no character will enter or speak in either case.
 
 7.  Play derives Default as well as defining new.
-    TODO: explain this. Clippy's new_without_default lint suggests a Default
-    impl when new takes no parameters. The spec asks for new, so both exist.
-    Say why you derived Default instead of writing it by hand, or removing new.
+    Clippy suggested implementing the Default trait alongside fn new(),
+    since new() takes zero parameters. However, the spec specifically asks
+    for new(), so I kept that method and derived Default, which works because
+    every field of Play also implements Default. I would have removed the
+    explicit new() implementation, but I wanted to follow the spec's
+    instructions.
 
 --------------------------------------------------------------------------------
 Structs
@@ -197,6 +200,10 @@ line numbers in a BinaryHeap (pushing back only the player that just spoke)
 would bring it down to O(n log c). With only a handful of characters in a scene,
 the simpler scan was kept: it is just as fast in practice, easier to read, and
 follows the spec's description of delivering lines through next_line and speak.
+I didn't run actual benchmarks (because I don't think micro-optimizations are
+the point of this lab...), but I'm curious about the performance difference since
+both are contiguous in memory and should have good cache locality, especially 
+for small c.
 
 --------------------------------------------------------------------------------
 Return Wrapper

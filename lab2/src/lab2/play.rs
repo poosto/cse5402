@@ -19,9 +19,7 @@ pub struct Play {
 impl Play {
     // Create a play with no scene fragments.
     pub fn new() -> Self {
-        Play {
-            fragments: Fragments::new(),
-        }
+        Self::default()
     }
 
     // Build a scene fragment for each configuration file in the script config.
