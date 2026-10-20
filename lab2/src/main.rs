@@ -1,6 +1,5 @@
 // TODO: add a file header comment explaining this file's purpose (grader feedback from Lab 1).
 // TODO: add a summary comment above every function (grader feedback from Lab 1).
-// TODO: replace the long `use ...declarations::{...}` list with a glob import (`use lab2::declarations::*;`) when every item is used (grader feedback from Lab 1).
 
 pub mod lab2;
 
@@ -17,10 +16,10 @@ const WHINGE_ARG: &str = "whinge";
 const FALLBACK_PROGRAM_NAME: &str = "lab2";
 
 fn usage(program_name: &str) {
-    println!("usage: {} <configuration_file_name> [whinge]", program_name);
+    println!("usage: {} <script_file_name> [whinge]", program_name);
 }
 
-fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
+fn parse_args(script_file_name: &mut String) -> Result<(), u8> {
     let mut args = Vec::<String>::new();
 
     for arg in env::args() {
@@ -44,7 +43,7 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
         return Err(ERR_BADLY_FORMED_COMMAND_LINE);
     }
 
-    config_file_name.clone_from(&args[ARGS_IDX_CONFIG_FILE]);
+    script_file_name.clone_from(&args[ARGS_IDX_SCRIPT_FILE]);
 
     // if "whinge" is provided (arg is already validated above)
     if args.len() == MAX_COMMAND_LINE_ARGS {
@@ -57,13 +56,13 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
 
 // TODO: document the run() design choice in the ReadMe's Return Wrapper subsection: main's logic lives in run() -> Result<(), u8> so it can use ? (which can't target ReturnWrapper on stable Rust, since the Try/FromResidual traits are unstable), and main wraps run()'s single Result with ReturnWrapper::new instead of unwrapping and rewrapping each Ok/Err.
 fn run() -> Result<(), u8> {
-    let mut config_file_name = String::new();
+    let mut script_file_name = String::new();
 
-    parse_args(&mut config_file_name)?;
+    parse_args(&mut script_file_name)?;
 
     let mut play = Play::new();
 
-    play.prepare(&config_file_name)?;
+    play.prepare(&script_file_name)?;
     play.recite();
 
     Ok(())

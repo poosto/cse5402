@@ -6,10 +6,6 @@ use super::player::Player;
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
-const IDX_PLAY_TITLE: usize = 0;
-const IDX_CHARACTER_FRAGMENTS: usize = 1;
-const MIN_CONFIG_LINES: usize = 2;
-
 const LINE_IDX_CHARACTER_NAME: usize = 0;
 const LINE_IDX_CHARACTER_FILE: usize = 1;
 const LINE_TOKEN_COUNT: usize = 2;
@@ -17,7 +13,7 @@ const LINE_TOKEN_COUNT: usize = 2;
 type PlayConfig = Vec<(String, String)>;
 
 pub struct SceneFragment {
-    title: String,
+    pub(crate) title: String,
     players: Vec<Player>,
 }
 
@@ -78,11 +74,7 @@ impl SceneFragment {
         }
     }
 
-    fn read_config(
-        config_file: &str,
-        play_title: &mut String,
-        play_config: &mut PlayConfig,
-    ) -> Result<(), u8> {
+    fn read_config(config_file: &str, play_config: &mut PlayConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
         // a missing configuration file is fatal
@@ -94,17 +86,12 @@ impl SceneFragment {
         // Lines are already trimmed, but this also removes empty whitespace lines
         lines.retain(|line| !line.is_empty());
 
-        if lines.len() < MIN_CONFIG_LINES {
-            eprintln!(
-                "ERROR: Configuration file {} needs a title and at least one character definition",
-                config_file
-            );
+        if lines.is_empty() {
+            eprintln!("ERROR: Configuration file {} cannot be empty", config_file);
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
-        *play_title = lines[IDX_PLAY_TITLE].clone();
-
-        for line in &lines[IDX_CHARACTER_FRAGMENTS..] {
+        for line in &lines {
             Self::add_config(line, play_config);
         }
 
@@ -113,7 +100,7 @@ impl SceneFragment {
 
     pub fn prepare(&mut self, config_file: &str) -> Result<(), u8> {
         let mut config = PlayConfig::new();
-        Self::read_config(config_file, &mut self.title, &mut config)?;
+        Self::read_config(config_file, &mut config)?;
         self.process_config(&config)
     }
 

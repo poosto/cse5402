@@ -2,159 +2,139 @@
 // TODO: add a summary comment above every function (grader feedback from Lab 1).
 
 use super::declarations::*;
-use super::player::Player;
+use super::scene_fragment::SceneFragment;
 use std::sync::atomic::Ordering;
 
-const IDX_PLAY_TITLE: usize = 0;
-const IDX_CHARACTER_FRAGMENTS: usize = 1;
-const MIN_CONFIG_LINES: usize = 2;
-
-const LINE_IDX_CHARACTER_NAME: usize = 0;
-const LINE_IDX_CHARACTER_FILE: usize = 1;
-const LINE_TOKEN_COUNT: usize = 2;
-
-type PlayConfig = Vec<(String, String)>;
+type ScriptConfig = Vec<(bool, String)>;
+type Fragments = Vec<SceneFragment>;
 
 pub struct Play {
-    title: String,
-    players: Vec<Player>,
+    fragments: Fragments,
 }
 
 impl Play {
     pub fn new() -> Self {
         Play {
-            title: String::new(),
-            players: Vec::new(),
+            fragments: Fragments::new(),
         }
     }
 
-    fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
-        for (character_name, character_file_name) in play_config {
-            let mut player = Player::new(character_name);
+    fn process_config(&mut self, script_config: &ScriptConfig) -> Result<(), u8> {
+        let mut title = String::new();
 
-            // TODO: document in ReadMe.txt that an unreadable part file is now fatal (Lab 2 spec: process_config returns an error
-            // if prepare fails) whereas Lab 1 skipped it with a warning (e.g. ../lab1/dir_part_config.txt); also that prepare
-            // is called before the push rather than after, as the spec words it.
-            if player.prepare(character_file_name).is_err() {
-                eprintln!(
-                    "ERROR: Failed to read part file {} for character {}",
-                    character_file_name, character_name
-                );
-                return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+        for (is_new_scene, config_line_text) in script_config {
+            if *is_new_scene {
+                title = config_line_text.clone();
+            } else {
+                let mut fragment = SceneFragment::new(&title);
+                title.clear();
+
+                match fragment.prepare(config_line_text) {
+                    Err(_) => return Err(ERR_FAILED_TO_GENERATE_SCRIPT),
+                    Ok(()) => self.fragments.push(fragment),
+                }
             }
-
-            self.players.push(player);
         }
 
         Ok(())
     }
 
-    fn add_config(config_line: &str, play_config: &mut PlayConfig) {
+    fn add_config(config_line: &str, script_config: &mut ScriptConfig) {
         let words: Vec<&str> = config_line.split_whitespace().collect();
 
-        if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
-            eprintln!(
-                "WARNING: Configuration line \"{}\" has {} tokens, expected {}",
-                config_line,
-                words.len(),
-                LINE_TOKEN_COUNT
-            );
-        }
+        let whinge = WHINGE_MODE.load(Ordering::SeqCst);
+        const SCENE_DIRECTIVE: &str = "[scene]";
 
-        if words.len() >= LINE_TOKEN_COUNT {
-            play_config.push((
-                words[LINE_IDX_CHARACTER_NAME].to_string(),
-                words[LINE_IDX_CHARACTER_FILE].to_string(),
-            ));
+        match words.as_slice() {
+            [] => return,
+            [SCENE_DIRECTIVE] => {
+                if whinge {
+                    eprintln!(
+                        "WARNING: Skipping script line \"{}\" because its {} directive has no scene title",
+                        config_line, SCENE_DIRECTIVE
+                    );
+                }
+            }
+            [SCENE_DIRECTIVE, title @ ..] => script_config.push((true, title.join(" "))),
+            [config_file, extra @ ..] => {
+                script_config.push((false, config_file.to_string()));
+
+                if whinge && !extra.is_empty() {
+                    eprintln!(
+                        "WARNING: Ignoring extra tokens \"{}\" after configuration file {} in script line \"{}\"",
+                        extra.join(" "),
+                        config_file,
+                        config_line
+                    );
+                }
+            }
         }
     }
 
-    fn read_config(
-        config_file: &str,
-        play_title: &mut String,
-        play_config: &mut PlayConfig,
-    ) -> Result<(), u8> {
+    fn read_config(script_file: &str, script_config: &mut ScriptConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
         // a missing configuration file is fatal
-        if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
-            eprintln!("ERROR: Failed to read configuration file {}", config_file);
+        if grab_trimmed_file_lines(script_file, &mut lines).is_err() {
+            eprintln!("ERROR: Failed to read script file {}", script_file);
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
         // Lines are already trimmed, but this also removes empty whitespace lines
         lines.retain(|line| !line.is_empty());
 
-        if lines.len() < MIN_CONFIG_LINES {
-            eprintln!(
-                "ERROR: Configuration file {} needs a title and at least one character definition",
-                config_file
-            );
+        if lines.is_empty() {
+            eprintln!("ERROR: Script file {script_file} is empty");
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
-        *play_title = lines[IDX_PLAY_TITLE].clone();
-
-        for line in &lines[IDX_CHARACTER_FRAGMENTS..] {
-            Self::add_config(line, play_config);
+        for line in &lines {
+            Self::add_config(line, script_config);
         }
 
         Ok(())
     }
 
-    pub fn prepare(&mut self, config_file: &str) -> Result<(), u8> {
-        let mut config = PlayConfig::new();
-        Self::read_config(config_file, &mut self.title, &mut config)?;
-        self.process_config(&config)
+    pub fn prepare(&mut self, script_file: &str) -> Result<(), u8> {
+        let mut config = ScriptConfig::new();
+        Self::read_config(script_file, &mut config)?;
+        self.process_config(&config)?;
+
+        match self.fragments.first() {
+            None => {
+                eprintln!(
+                    "ERROR: Script file {} does not name any configuration files",
+                    script_file
+                );
+                Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+            }
+            Some(first) if first.title.is_empty() => {
+                eprintln!(
+                    "ERROR: Script file {} must give a [scene] title before its first configuration file",
+                    script_file
+                );
+                Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+            }
+            Some(_) => Ok(()),
+        }
     }
 
     pub fn recite(&mut self) {
-        println!("{}", self.title);
+        // Can't cleanly do a for_each because a &self.fragments[i - 1] is another borrow,
+        // since the iterator borrows for its entire duration.
+        for idx in 0..self.fragments.len() {
+            if idx == 0 {
+                self.fragments[idx].enter_all();
+            } else {
+                self.fragments[idx].enter(&self.fragments[idx - 1]);
+            }
 
-        let mut expected_line = 0;
-        let mut most_recent_speaker = String::new();
-        let whinge = WHINGE_MODE.load(Ordering::SeqCst);
+            self.fragments[idx].recite();
 
-        loop {
-            // Run through each line
-            // Use filter_map to remove None values when calling next_line()
-            // Map Some values to include the index of the Player for later
-            // (we can't hold a ref to it and call speak())
-            // Take the min of the tuple
-            let next_line = self
-                .players
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, player)| player.next_line().map(|line| (line, idx)))
-                .min();
-
-            match next_line {
-                None => break,
-                Some((line, idx)) => {
-                    if whinge {
-                        // a gap is reported once as a range rather than line by line, since
-                        // a huge line number could otherwise produce billions of warnings
-                        if line > expected_line {
-                            // line > expected_line >= 0, so line - 1 cannot underflow
-                            let last_missing = line - 1;
-
-                            if last_missing == expected_line {
-                                eprintln!("WARNING: Line {} is missing", expected_line);
-                            } else {
-                                eprintln!(
-                                    "WARNING: Lines {} to {} are missing",
-                                    expected_line, last_missing
-                                );
-                            }
-                        } else if line < expected_line {
-                            eprintln!("WARNING: Line {} is duplicated", line);
-                        }
-                    }
-
-                    self.players[idx].speak(&mut most_recent_speaker);
-                    // saturate so a line numbered usize::MAX cannot overflow
-                    expected_line = line.saturating_add(1);
-                }
+            if idx == self.fragments.len() - 1 {
+                self.fragments[idx].exit_all();
+            } else {
+                self.fragments[idx].exit(&self.fragments[idx + 1]);
             }
         }
     }
