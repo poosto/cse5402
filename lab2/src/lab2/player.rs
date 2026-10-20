@@ -36,8 +36,11 @@ impl Player {
             self.add_script_line(&line);
         }
 
-        // TODO: decide sort() (ties ordered by text) vs sort_by_key on line number (stable, keeps file order for duplicates); document the choice in ReadMe.txt.
-        self.lines.sort();
+        // Only sort by line number so if two lines have the same number,
+        // their original order is preserved rather than breaking the tie with a
+        // lexicographical sort on the line content.
+        // TODO: document this
+        self.lines.sort_by_key(|&(line_number, _)| line_number);
 
         Ok(())
     }
