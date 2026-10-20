@@ -18,6 +18,8 @@ pub struct Play {
 
 impl Play {
     // Create a play with no scene fragments.
+    // Utilize the derived Default trait, while still
+    // meeting the new() naming convention.
     pub fn new() -> Self {
         Self::default()
     }
