@@ -1,4 +1,5 @@
 TODO: update this ReadMe for Lab 2 (title, overview, build/run steps, testing, AI citations) and add the Structs, Return Wrapper, Scene Fragments, and Testing subsections the spec asks for.
+TODO: in the ReadMe (e.g. under Scene Fragments, where the spec has Player implement PartialEq/Eq/PartialOrd/Ord), write about what you learned about marker traits: Eq has no methods because it only promises PartialEq is reflexive, while Ord adds cmp because it returns Ordering instead of Option<Ordering>; also PartialEq vs Eq for floats/NaN and why partial_cmp returns an Option.
 
 ================================================================================
 SECTION 1: IDENTIFICATION AND DESIGN
