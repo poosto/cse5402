@@ -3,19 +3,28 @@
 
 use super::declarations::*;
 use super::player::Player;
+use std::sync::atomic::Ordering;
+
+const IDX_PLAY_TITLE: usize = 0;
+const IDX_CHARACTER_FRAGMENTS: usize = 1;
+const MIN_CONFIG_LINES: usize = 2;
+
+const LINE_IDX_CHARACTER_NAME: usize = 0;
+const LINE_IDX_CHARACTER_FILE: usize = 1;
+const LINE_TOKEN_COUNT: usize = 2;
 
 type PlayConfig = Vec<(String, String)>;
 
 pub struct Play {
-    scene_title: String,
-    characters: Vec<Player>,
+    title: String,
+    players: Vec<Player>,
 }
 
 impl Play {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Play {
-            scene_title: String::new(),
-            characters: Vec::new(),
+            title: String::new(),
+            players: Vec::new(),
         }
     }
 
@@ -34,13 +43,13 @@ impl Play {
                 return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
             }
 
-            self.characters.push(player);
+            self.players.push(player);
         }
 
         Ok(())
     }
 
-    fn add_config(&self, config_line: &str, play_config: &mut PlayConfig) {
+    fn add_config(config_line: &str, play_config: &mut PlayConfig) {
         let words: Vec<&str> = config_line.split_whitespace().collect();
 
         if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
@@ -57,6 +66,83 @@ impl Play {
                 words[LINE_IDX_CHARACTER_NAME].to_string(),
                 words[LINE_IDX_CHARACTER_FILE].to_string(),
             ));
+        }
+    }
+
+    fn read_config(
+        config_file: &str,
+        play_title: &mut String,
+        play_config: &mut PlayConfig,
+    ) -> Result<(), u8> {
+        let mut lines = Vec::<String>::new();
+
+        // a missing configuration file is fatal
+        if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
+            eprintln!("ERROR: Failed to read configuration file {}", config_file);
+            return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+        }
+
+        // Lines are already trimmed, but this also removes empty whitespace lines
+        lines.retain(|line| !line.is_empty());
+
+        if lines.len() < MIN_CONFIG_LINES {
+            eprintln!(
+                "ERROR: Configuration file {} needs a title and at least one character definition",
+                config_file
+            );
+            return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
+        }
+
+        *play_title = lines[IDX_PLAY_TITLE].clone();
+
+        for line in &lines[IDX_CHARACTER_FRAGMENTS..] {
+            Self::add_config(line, play_config);
+        }
+
+        Ok(())
+    }
+
+    pub fn prepare(&mut self, config_file: &str) -> Result<(), u8> {
+        let mut config = PlayConfig::new();
+        Self::read_config(config_file, &mut self.title, &mut config)?;
+        self.process_config(&config)
+    }
+
+    pub fn recite(&mut self) {
+        println!("{}", self.title);
+
+        let mut expected_line = 0;
+        let mut most_recent_speaker = String::new();
+        let whinge = WHINGE_MODE.load(Ordering::SeqCst);
+
+        loop {
+            // Run through each line
+            // Use filter_map to remove None values when calling next_line()
+            // Map Some values to include the index of the Player for later
+            // (we can't hold a ref to it and call speak())
+            // Take the min of the tuple
+            let next_line = self
+                .players
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, player)| player.next_line().map(|line| (line, idx)))
+                .min();
+
+            match next_line {
+                None => break,
+                Some((line, idx)) => {
+                    if whinge {
+                        if line > expected_line {
+                            // TODO: complain
+                        } else if line < expected_line {
+                            // TODO: complain
+                        }
+                    }
+
+                    self.players[idx].speak(&mut most_recent_speaker);
+                    expected_line = line + 1;
+                }
+            }
         }
     }
 }

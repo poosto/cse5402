@@ -6,7 +6,13 @@ pub mod lab2;
 
 use std::{env, sync::atomic::Ordering};
 
-use lab2::{declarations::{Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE, ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE}, script_gen::script_gen};
+use lab2::{
+    declarations::{
+        Play, ARGS_IDX_CONFIG_FILE, ARGS_IDX_PROGRAM_NAME, ARGS_IDX_WHINGE_MODE,
+        ERR_BADLY_FORMED_COMMAND_LINE, MAX_COMMAND_LINE_ARGS, MIN_COMMAND_LINE_ARGS, WHINGE_MODE,
+    },
+    script_gen::script_gen,
+};
 
 // The text a user supplies as the optional third argument to turn on complaints
 // about problems the program handles rather than failing on.
@@ -25,10 +31,11 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
     let mut args = Vec::<String>::new();
 
     for arg in env::args() {
-        args.push(arg); 
+        args.push(arg);
     }
 
-    let program_name = args.get(ARGS_IDX_PROGRAM_NAME)
+    let program_name = args
+        .get(ARGS_IDX_PROGRAM_NAME)
         .map(String::as_str)
         .unwrap_or(FALLBACK_PROGRAM_NAME);
 
@@ -55,21 +62,6 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
     Ok(())
 }
 
-fn recite(play_title: &str, play: &Play) {
-    println!("{}", play_title);
-
-    let mut prev_character_name = String::new();
-    for (_, character_name, line_text) in play {
-        if prev_character_name != *character_name {
-            println!("\n{}.", character_name);
-        } 
-
-        println!("{}", line_text);
-
-        prev_character_name = character_name.clone();
-    }
-}
-
 fn main() -> Result<(), u8> {
     let mut config_file_name = String::new();
     parse_args(&mut config_file_name)?;
@@ -85,4 +77,3 @@ fn main() -> Result<(), u8> {
 
     Ok(())
 }
-
