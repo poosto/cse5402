@@ -172,6 +172,23 @@ Design decisions
     concise. In particular, the for-loop case was a warning from Clippy.
 
 --------------------------------------------------------------------------------
+Structs
+--------------------------------------------------------------------------------
+
+TODO: summarize how the code was refactored into the Player and Play structs and
+their implementations, and the design challenges encountered (see the TODOs in
+player.rs and play.rs for points to cover).
+
+Play's recite method delivers lines by repeatedly scanning every Player's
+next_line for the smallest line number and calling speak on that player, so
+reciting n lines across c characters takes O(n * c) time. Since each player's
+lines are already sorted, this is a c-way merge, and keeping the players' next
+line numbers in a BinaryHeap (pushing back only the player that just spoke)
+would bring it down to O(n log c). With only a handful of characters in a scene,
+the simpler scan was kept: it is just as fast in practice, easier to read, and
+follows the spec's description of delivering lines through next_line and speak.
+
+--------------------------------------------------------------------------------
 Insights, observations, and questions
 --------------------------------------------------------------------------------
 
@@ -457,6 +474,27 @@ PASS  configuration with no readable parts
 test_output.txt contains captured output from a run of the reference fragment,
 the Macbeth fragment, the fuzzed configuration with and without whinge mode, the
 numeric edge cases, two failure cases, and the full suite.
+
+--------------------------------------------------------------------------------
+Known limitations
+--------------------------------------------------------------------------------
+
+Testing the numeric edge cases (numeric_config.txt, whose Ghost part includes a
+line numbered 18446744073709551615, the largest 64-bit usize) exposed two
+problems in recite, both now fixed: computing the next expected line number as
+line + 1 overflowed and panicked, and in whinge mode reporting each missing line
+individually would have printed about 1.8 x 10^19 warnings. recite now advances
+the expected line number with saturating_add, and reports each gap in the line
+numbers with a single warning (e.g. "Lines 13 to 18446744073709551614 are
+missing") rather than one warning per missing line.
+
+One case remains deliberately unhandled: because the expected line number
+saturates at usize::MAX rather than moving past it, a second line also numbered
+usize::MAX is not reported as a duplicate in whinge mode. Both lines are still
+recited, consecutively and in the correct order; only the complaint is missing.
+Catching it would mean tracking the last line spoken separately (e.g. as an
+Option<usize>), which did not seem worth the extra state for a case that only
+arises if two lines are deliberately given the largest possible line number.
 
 ================================================================================
 SECTION 4: AI USAGE AND CITATIONS

@@ -132,9 +132,19 @@ impl Play {
                 None => break,
                 Some((line, idx)) => {
                     if whinge {
+                        // a gap is reported once as a range rather than line by line, since
+                        // a huge line number could otherwise produce billions of warnings
                         if line > expected_line {
-                            for missing_line in expected_line..line {
-                                eprintln!("WARNING: Line {} is missing", missing_line);
+                            // line > expected_line >= 0, so line - 1 cannot underflow
+                            let last_missing = line - 1;
+
+                            if last_missing == expected_line {
+                                eprintln!("WARNING: Line {} is missing", expected_line);
+                            } else {
+                                eprintln!(
+                                    "WARNING: Lines {} to {} are missing",
+                                    expected_line, last_missing
+                                );
                             }
                         } else if line < expected_line {
                             eprintln!("WARNING: Line {} is duplicated", line);
@@ -142,7 +152,8 @@ impl Play {
                     }
 
                     self.players[idx].speak(&mut most_recent_speaker);
-                    expected_line = line + 1;
+                    // saturate so a line numbered usize::MAX cannot overflow
+                    expected_line = line.saturating_add(1);
                 }
             }
         }
