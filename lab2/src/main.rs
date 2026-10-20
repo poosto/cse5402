@@ -4,7 +4,7 @@
 
 pub mod lab2;
 
-use lab2::{declarations::*, play::Play};
+use lab2::{declarations::*, play::Play, return_wrapper::ReturnWrapper};
 use std::{env, sync::atomic::Ordering};
 
 // The text a user supplies as the optional third argument to turn on complaints
@@ -55,14 +55,20 @@ fn parse_args(config_file_name: &mut String) -> Result<(), u8> {
     Ok(())
 }
 
-fn main() -> Result<(), u8> {
+// TODO: document the run() design choice in the ReadMe's Return Wrapper subsection: main's logic lives in run() -> Result<(), u8> so it can use ? (which can't target ReturnWrapper on stable Rust, since the Try/FromResidual traits are unstable), and main wraps run()'s single Result with ReturnWrapper::new instead of unwrapping and rewrapping each Ok/Err.
+fn run() -> Result<(), u8> {
     let mut config_file_name = String::new();
+
     parse_args(&mut config_file_name)?;
 
     let mut play = Play::new();
-    play.prepare(&config_file_name)?;
 
+    play.prepare(&config_file_name)?;
     play.recite();
 
     Ok(())
+}
+
+fn main() -> ReturnWrapper {
+    ReturnWrapper::new(run())
 }
