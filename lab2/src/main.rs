@@ -1,5 +1,7 @@
-// TODO: add a file header comment explaining this file's purpose (grader feedback from Lab 1).
-// TODO: add a summary comment above every function (grader feedback from Lab 1).
+// Preston Meek -- meek@wustl.edu
+// Lab 2 -- main.rs
+// The entry point for the Lab 2 program. Read the command line, prepare the play
+// from the script file, and recite it. Return a different exit code for each kind of failure.
 
 pub mod lab2;
 
@@ -15,10 +17,13 @@ const WHINGE_ARG: &str = "whinge";
 // a position that may not exist.
 const FALLBACK_PROGRAM_NAME: &str = "lab2";
 
+// Print how to run the program.
 fn usage(program_name: &str) {
     println!("usage: {} <script_file_name> [whinge]", program_name);
 }
 
+// Check the command line arguments. Store the script file name, and turn on whinge mode
+// if "whinge" is given. If the arguments are wrong, print the usage message and return an error.
 fn parse_args(script_file_name: &mut String) -> Result<(), u8> {
     let mut args = Vec::<String>::new();
 
@@ -55,6 +60,8 @@ fn parse_args(script_file_name: &mut String) -> Result<(), u8> {
 }
 
 // TODO: document the run() design choice in the ReadMe's Return Wrapper subsection: main's logic lives in run() -> Result<(), u8> so it can use ? (which can't target ReturnWrapper on stable Rust, since the Try/FromResidual traits are unstable), and main wraps run()'s single Result with ReturnWrapper::new instead of unwrapping and rewrapping each Ok/Err.
+// Do the program's main work. Parse the arguments, prepare the play, and recite it.
+// Return the first error code that comes up, otherwise an empty Ok.
 fn run() -> Result<(), u8> {
     let mut script_file_name = String::new();
 
@@ -68,6 +75,7 @@ fn run() -> Result<(), u8> {
     Ok(())
 }
 
+// Run the program and turn its result into the exit code through ReturnWrapper.
 fn main() -> ReturnWrapper {
     ReturnWrapper::new(run())
 }

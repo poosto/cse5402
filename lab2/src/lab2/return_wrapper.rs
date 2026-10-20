@@ -1,5 +1,7 @@
-// TODO: add a file header comment explaining this file's purpose (grader feedback from Lab 1).
-// TODO: add a summary comment above every function (new, report) (grader feedback from Lab 1).
+// Preston Meek -- meek@wustl.edu
+// Lab 2 -- return_wrapper.rs
+// Define the ReturnWrapper struct. It wraps the program's result so main can return it,
+// and turns that result into the program's exit code.
 
 use std::process::{ExitCode, Termination};
 
@@ -10,6 +12,7 @@ pub struct ReturnWrapper {
 impl ReturnWrapper {
     const SUCCESS: u8 = 0;
 
+    // Wrap the program's result. Ok becomes the success code 0, and Err keeps its error code.
     pub fn new(result: Result<(), u8>) -> Self {
         match result {
             Ok(()) => ReturnWrapper {
@@ -21,6 +24,8 @@ impl ReturnWrapper {
 }
 
 impl Termination for ReturnWrapper {
+    // Called when main returns. Print the error code to stderr if the program failed,
+    // then return the code as the program's exit code.
     fn report(self) -> ExitCode {
         if self.error_code != Self::SUCCESS {
             eprintln!("Error: {}", self.error_code);

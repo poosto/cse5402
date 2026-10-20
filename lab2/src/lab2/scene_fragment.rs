@@ -1,5 +1,7 @@
-// TODO: add a file header comment explaining this module's purpose (grader feedback from Lab 1).
-// TODO: add a summary comment above every function (grader feedback from Lab 1).
+// Preston Meek -- meek@wustl.edu
+// Lab 2 -- scene_fragment.rs
+// Define the SceneFragment struct. A fragment reads a configuration file, sets up one player
+// for each character, recites their lines in order, and prints who enters and exits.
 
 use super::declarations::*;
 use super::player::Player;
@@ -18,6 +20,7 @@ pub struct SceneFragment {
 }
 
 impl SceneFragment {
+    // Create a scene fragment with the given title and no players.
     pub fn new(title: &str) -> Self {
         let title = title.to_string();
 
@@ -27,6 +30,8 @@ impl SceneFragment {
         }
     }
 
+    // Make a player for each character in the play config, read its part file, and sort
+    // the players. Return an error if any part file cannot be read.
     fn process_config(&mut self, play_config: &PlayConfig) -> Result<(), u8> {
         for (character_name, character_file_name) in play_config {
             let mut player = Player::new(character_name);
@@ -54,6 +59,9 @@ impl SceneFragment {
         Ok(())
     }
 
+    // Add one configuration line to the play config. The first two tokens are the character
+    // name and part file. Lines with fewer than two tokens are skipped, and extra tokens are
+    // ignored. In whinge mode, warn if a line does not have exactly two tokens.
     fn add_config(config_line: &str, play_config: &mut PlayConfig) {
         let words: Vec<&str> = config_line.split_whitespace().collect();
 
@@ -74,6 +82,8 @@ impl SceneFragment {
         }
     }
 
+    // Read the configuration file and add each non-blank line to the play config.
+    // Return an error if the file cannot be read or has no non-blank lines.
     fn read_config(config_file: &str, play_config: &mut PlayConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
@@ -98,12 +108,16 @@ impl SceneFragment {
         Ok(())
     }
 
+    // Read the configuration file and set up all of the fragment's players.
+    // Return an error if any step fails.
     pub fn prepare(&mut self, config_file: &str) -> Result<(), u8> {
         let mut config = PlayConfig::new();
         Self::read_config(config_file, &mut config)?;
         self.process_config(&config)
     }
 
+    // Print every player's lines in line number order. In whinge mode, warn about
+    // missing or duplicated line numbers.
     pub fn recite(&mut self) {
         let mut expected_line = 0;
         let mut most_recent_speaker = String::new();
@@ -210,19 +224,24 @@ impl SceneFragment {
         exiting.for_each(|player| println!("[Exit {}.]", player.name));
     }
 
+    // Print the title, if there is one, and announce the players who were not in the
+    // previous fragment.
     pub fn enter(&self, other: &Self) {
         self.enter_with(&other.players, true);
     }
 
+    // Used for the first fragment. Print the title and announce that every player enters.
     pub fn enter_all(&self) {
         // Everyone enters, so no shared players, thus the slice is empty
         self.enter_with(&[], false);
     }
 
+    // Announce, in reverse order, the players who are not in the next fragment.
     pub fn exit(&self, other: &Self) {
         self.exit_with(&other.players);
     }
 
+    // Used for the last fragment. Announce, in reverse order, that every player exits.
     pub fn exit_all(&self) {
         // Everyone exits, so no shared players, thus the slice is empty
         self.exit_with(&[]);

@@ -1,5 +1,7 @@
-// TODO: add a file header comment explaining this module's purpose (grader feedback from Lab 1).
-// TODO: add a summary comment above every function (grader feedback from Lab 1).
+// Preston Meek -- meek@wustl.edu
+// Lab 2 -- play.rs
+// Define the Play struct. A play reads a script file, builds one scene fragment for each
+// configuration file it names, and recites the fragments in order.
 
 use super::declarations::*;
 use super::scene_fragment::SceneFragment;
@@ -8,17 +10,23 @@ use std::sync::atomic::Ordering;
 type ScriptConfig = Vec<(bool, String)>;
 type Fragments = Vec<SceneFragment>;
 
+// TODO: document Clippy suggestion for Default rather than new since no params
+#[derive(Default)]
 pub struct Play {
     fragments: Fragments,
 }
 
 impl Play {
+    // Create a play with no scene fragments.
     pub fn new() -> Self {
         Play {
             fragments: Fragments::new(),
         }
     }
 
+    // Build a scene fragment for each configuration file in the script config.
+    // A [scene] entry gives its title to the next fragment only. Later fragments in the same
+    // scene get an empty title. Return an error if any fragment fails to prepare.
     fn process_config(&mut self, script_config: &ScriptConfig) -> Result<(), u8> {
         let mut title = String::new();
 
@@ -39,6 +47,9 @@ impl Play {
         Ok(())
     }
 
+    // Add one script line to the script config. Blank lines are skipped. A [scene] line
+    // adds a new scene title, and any other line adds its first token as a configuration file.
+    // In whinge mode, warn about a [scene] line with no title and about extra tokens.
     fn add_config(config_line: &str, script_config: &mut ScriptConfig) {
         let words: Vec<&str> = config_line.split_whitespace().collect();
 
@@ -46,7 +57,7 @@ impl Play {
         const SCENE_DIRECTIVE: &str = "[scene]";
 
         match words.as_slice() {
-            [] => return,
+            [] => {}
             [SCENE_DIRECTIVE] => {
                 if whinge {
                     eprintln!(
@@ -71,6 +82,8 @@ impl Play {
         }
     }
 
+    // Read the script file and add each non-blank line to the script config.
+    // Return an error if the file cannot be read or has no non-blank lines.
     fn read_config(script_file: &str, script_config: &mut ScriptConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
@@ -95,6 +108,9 @@ impl Play {
         Ok(())
     }
 
+    // Read the script file and build all of the play's scene fragments.
+    // Return an error if the script names no configuration files, or if the first
+    // fragment has no scene title.
     pub fn prepare(&mut self, script_file: &str) -> Result<(), u8> {
         let mut config = ScriptConfig::new();
         Self::read_config(script_file, &mut config)?;
@@ -119,6 +135,9 @@ impl Play {
         }
     }
 
+    // Recite each scene fragment in order. Everyone in the first fragment enters at the start,
+    // and everyone in the last fragment exits at the end. Between fragments, only players
+    // who are not in both fragments enter or exit.
     pub fn recite(&mut self) {
         // Can't cleanly do a for_each because a &self.fragments[i - 1] is another borrow,
         // since the iterator borrows for its entire duration.

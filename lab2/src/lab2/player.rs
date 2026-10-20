@@ -1,5 +1,7 @@
-// TODO: add a file header comment explaining this module's purpose (grader feedback from Lab 1).
-// TODO: add a summary comment above every function (grader feedback from Lab 1).
+// Preston Meek -- meek@wustl.edu
+// Lab 2 -- player.rs
+// Define the Player struct. A player reads its part file, keeps its lines sorted by line number,
+// and speaks them one at a time. Players can also be compared and sorted by their first line.
 
 use super::declarations::*;
 use std::cmp;
@@ -14,6 +16,7 @@ pub struct Player {
 }
 
 impl Player {
+    // Create a player with the given name and no lines.
     pub fn new(name: &str) -> Self {
         Player {
             name: name.to_string(),
@@ -22,6 +25,8 @@ impl Player {
         }
     }
 
+    // Read the player's part file, add each valid line, and sort the lines by line number.
+    // Return an error if the file cannot be read.
     pub fn prepare(&mut self, part_file_name: &str) -> Result<(), u8> {
         let mut lines = Vec::new();
 
@@ -37,6 +42,9 @@ impl Player {
         Ok(())
     }
 
+    // Add one line from the part file. The first token is the line number and the rest is
+    // the text. Blank lines are skipped. In whinge mode, warn about lines that have only
+    // one token or do not start with a valid line number.
     fn add_script_line(&mut self, line: &str) {
         if line.is_empty() {
             return;
@@ -63,6 +71,8 @@ impl Player {
         }
     }
 
+    // Print the player's next line and move on to the one after it. If a different player
+    // spoke last, print this player's name first. Do nothing if no lines are left.
     pub fn speak(&mut self, most_recent_speaker: &mut String) {
         if self.line_index >= self.lines.len() {
             return;
@@ -78,6 +88,7 @@ impl Player {
         self.line_index += 1;
     }
 
+    // Return the line number of the player's next line, or None if no lines are left.
     pub fn next_line(&self) -> Option<usize> {
         // map() transforms the inner value of the option, or
         // returns the contained error (monadic operation)
@@ -88,6 +99,8 @@ impl Player {
 }
 
 impl PartialEq for Player {
+    // Two players are equal if both are silent, or if both have lines and their
+    // first line numbers match.
     fn eq(&self, other: &Self) -> bool {
         (self.lines.is_empty() && other.lines.is_empty())
             || (!self.lines.is_empty()
@@ -103,6 +116,7 @@ impl PartialEq for Player {
 impl Eq for Player {}
 
 impl PartialOrd for Player {
+    // Players can always be compared, so this just wraps cmp's result in Some.
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         Some(self.cmp(other))
     }
@@ -111,8 +125,11 @@ impl PartialOrd for Player {
 // Ord isn't a marker trait because it carries new info
 // It means something can *always* be ordered, versus sometimes (Option)
 // Whereas PartialEq can always compare two things, but reflexivity doesn't hold.
-// Incomparable or not equal is basically the same thing.
+// Incomparable or not equal is basically the same thing for equivalence,
+// but for ordering there is a 4th option (not orderable).
 impl Ord for Player {
+    // Silent players come before players with lines. Players with lines are ordered
+    // by their first line number.
     fn cmp(&self, other: &Self) -> cmp::Ordering {
         if self == other {
             cmp::Ordering::Equal
