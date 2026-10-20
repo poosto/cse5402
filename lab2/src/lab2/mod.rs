@@ -3,4 +3,3 @@
 pub mod declarations;
 pub mod play;
 pub mod player;
-pub mod script_gen;

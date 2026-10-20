@@ -133,9 +133,11 @@ impl Play {
                 Some((line, idx)) => {
                     if whinge {
                         if line > expected_line {
-                            // TODO: complain
+                            for missing_line in expected_line..line {
+                                eprintln!("WARNING: Line {} is missing", missing_line);
+                            }
                         } else if line < expected_line {
-                            // TODO: complain
+                            eprintln!("WARNING: Line {} is duplicated", line);
                         }
                     }
 
