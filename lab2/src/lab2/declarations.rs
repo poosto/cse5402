@@ -19,8 +19,8 @@ pub const ARGS_IDX_WHINGE_MODE: usize = 2;
 // Error code 1: CLI input is malformed
 pub const ERR_BADLY_FORMED_COMMAND_LINE: u8 = 1;
 
-// Error code 2: CLI input found valid input, but the content of that input is malformed.
-// The script could not be generated from the input specs.
+// Error code 2: CLI input is valid, but the script could not be generated.
+// For example, a file could not be opened or read, or its content is malformed.
 pub const ERR_FAILED_TO_GENERATE_SCRIPT: u8 = 2;
 
 // read_line reports zero bytes read only at end of file
@@ -28,7 +28,7 @@ pub const BYTES_READ_AT_EOF: usize = 0;
 
 pub static WHINGE_MODE: AtomicBool = AtomicBool::new(false);
 
-// Given a file name, output to a vector of Strings where each String is a line in that file.
+// Given a file name, output to a vector of Strings where each String is a trimmed line in that file.
 // Return an error code if this operation fails, otherwise an empty Ok.
 pub fn grab_trimmed_file_lines(file_name: &str, file_lines: &mut Vec<String>) -> Result<(), u8> {
     match File::open(file_name) {

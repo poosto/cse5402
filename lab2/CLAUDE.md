@@ -7,4 +7,5 @@
 - Every `.rs` file needs a header comment explaining its purpose, and every function needs a summary comment (Lab 1 lost points for missing these).
 - **Working style:** I write the majority of the code myself. Don't implement lab features unless I ask. Use AI for: answering questions, testing, cleanup/refactors I request, documentation (ReadMe, comments), and verifying that every spec requirement is met.
 - **Testing should be exhaustive**, in the style of Lab 1 (`run_tests.sh` regression suite, `fuzz_test.py` randomized fuzzer, `gen_output.sh` captured output, hand-made malformed/edge-case input files). Check every spec requirement, including whinge output going to stderr and distinct exit codes (`echo $?`).
+- **Writing style (comments, ReadMe, any text I submit):** Keep the English very simple and easy to understand. No em dashes. Avoid semicolons. Use short, plain sentences.
 - **All `TODO`s must be resolved before submission.** Check with `grep -rn TODO --exclude-dir=target .`
