@@ -1,0 +1,8 @@
+007 Leading zeros still parse as a usize.
++5 A leading plus sign is accepted by parse::<usize>.
+18446744073709551615 The largest usize value on a 64-bit machine.
+1_0 An underscore separator is not valid in a parsed string.
+3.5 A floating point value is not a usize.
+0x10 A hexadecimal literal is not a usize.
+ 6 
+12 Text with	an	interior	tab is preserved as written.

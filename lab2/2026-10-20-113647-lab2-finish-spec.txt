@@ -1,0 +1,2814 @@
+ ▐▛███▛█   Claude Code v2.1.302
+▝▜██████▀  Opus 5.5 · Claude Pro
+ ▝▝   ▝▝   ~/Desktop/CLASS REPOS/CSE 5402/lab2
+
+
+❯ /clear                                                                        
+
+❯ look at past ai transcripts and web to figure out whats left for impl besides 
+  TODOs                                                                         
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Fetch(https://www.cse.wustl.edu/~cdgill/courses/cse5402/lab2/index.html)
+  ⎿  Error: unable to verify the first certificate
+
+  Read 1 file, ran 4 shell commands (ctrl+o to expand)
+
+⏺ I've read the spec and the code. Now I'm checking the end of the earlier
+  transcript for any open items before I write up the list.
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ Most of the remaining work is the Play rewrite in play.rs. Your scene-fragment
+  side is mostly done, but SceneFragment still reads its config files the Lab 1
+  way. Your earlier commits cover the structs, the return wrapper, Player's
+  ordering traits, the scene_fragment.rs copy, new(title), sorting, and
+  enter/enter_all/exit/exit_all. I checked the code against the spec (fetched
+  with curl, since WebFetch failed on the course site's certificate) and against
+  both transcripts.
+
+  Still to implement (none of these have TODOs)
+
+  1. SceneFragment::read_config still expects a title line (this is a bug)
+
+  In Lab 2 the titles moved into the script's [scene] lines, and
+  hamlet_ii_1a_config.txt really does start with Polonius 
+  Polonius_hamlet_ii_1a.txt. Right now scene_fragment.rs:105 does *play_title = 
+  lines[IDX_PLAY_TITLE].clone(). That uses the first character line as the
+  title, so that character is dropped and the title from new(title) is
+  overwritten. MIN_CONFIG_LINES = 2 also rejects a config with only one
+  character. You'd drop the title parameter and constants and read every
+  non-blank line as a character line.
+
+  2. play.rs rewrite (spec, "Handling a script file")
+
+  - Types: remove PlayConfig and add type ScriptConfig = Vec<(bool, String)> and
+    type Fragments = Vec<SceneFragment>.
+  - Struct: Play gets a single Fragments field, and new() starts it empty.
+  - add_config:
+    - Skip blank lines.
+    - A line that is only [scene] is skipped, with a whinge about the missing
+      title.
+    - [scene] followed by more tokens pushes (true, rest joined with spaces).
+    - Anything else pushes (false, first token), with a whinge if there are
+      extra tokens.
+  - read_config(script_file, &mut ScriptConfig): if the file can't be opened or
+    has no lines, print an error with eprintln! and return Err. Otherwise call
+    add_config on each line and return Ok(()).
+  - process_config: keep a running title string and destructure each (bool, 
+    String).
+    - When the bool is true, update the title.
+    - When it's false, push SceneFragment::new(&title), clear the title, call
+      that fragment's prepare, and return Err if it fails.
+  - prepare: pass a fresh ScriptConfig. At the end, return Ok only if there is
+    at least one fragment and the first one has a title; otherwise print an
+    error and return Err.
+  - recite: for each fragment call enter, then recite, then exit.
+    - The first fragment uses enter_all and the last uses exit_all.
+    - Every other enter gets the previous fragment and every other exit gets the
+      next one.
+    - A script with one fragment should call both enter_all and exit_all.
+  - Cleanup: play.rs's current recite and title/players logic go away, since
+    that now lives in SceneFragment.
+
+  3. main.rs renames
+
+  - Change the usage message to usage: ./lab2 <script_file_name> [whinge]. It
+    still says <configuration_file_name>.
+  - Rename config_file_name to script_file_name and ARGS_IDX_CONFIG_FILE to
+    something like ARGS_IDX_SCRIPT_FILE in declarations.rs.
+
+  4. Worth deciding: error codes
+
+  Every failure after argument parsing returns ERR_FAILED_TO_GENERATE_SCRIPT
+  (2). The grading notes list "using the same error … return code for different
+  kinds or causes of failures" as a deduction, and the spec has you test each
+  distinct return value with echo $?. Separate codes for things like an
+  unreadable script, a script with no fragments or no title, and a bad config or
+  part file would be safer. The spec's wording ("an error indicating that
+  script generation failed") would also allow a single code, so it's your call.
+
+  Everything else (already covered by TODOs)
+
+  - File header and function summary comments in every .rs file.
+  - The ReadMe sections:
+    - Overview: lab number, names and emails, design overview, insights.
+    - Build and run instructions.
+    - Structs, Return Wrapper, Scene Fragments, Testing.
+    - The marker-trait notes.
+    - AI citations for both transcripts.
+  - The three open design decisions: an empty fragment, tied line numbers across
+    players, and sort vs. sort_by_key in Player::prepare.
+  - Converting run_tests.sh, fuzz_test.py and gen_output.sh to Lab 2.
+  - The spec asks you to submit "output from at least one significant test",
+    which is gen_output.sh's job once it's updated.
+
+  Also, ai_transcripts/2026-10-19-232912-lab2-scene-fragment.txt is still
+  untracked in git. When you've done items 1–3, I can update the test scripts
+  and run the full suite.
+
+✻ Worked for 50s · done Monday 11:30 PM
+
+❯ so what step from the web is this                                             
+
+⏺ I'm assuming you mean item 1, the title line in SceneFragment::read_config,
+  since you have scene_fragment.rs open. If you meant a different item, tell me
+  which one.
+
+  No numbered step in the spec covers it. It follows from two other parts of the
+  page:
+
+  1. The intro note:
+  ▎ "Note that for this lab the titles of the scenes have moved from the 
+  individual configuration files into the script file's [scene] directives."
+
+     The new config files show this: hamlet_ii_1a_config.txt has only the two
+     character lines, with no title.
+  2. The new step under "Handling a script file and announcing entrances and 
+     exits":
+  ▎ "modify the associated new function so that it takes a reference to a String
+  and uses that reference to initialize the SceneFragment struct's title 
+  field."
+
+     Combined with the process_config step for Play ("use the title string to
+     push a new SceneFragment … set the title string to be an empty string"),
+     the title now comes only from new, which gets it from the [scene] line.
+     Nothing tells you to change read_config. But the copied Lab 1 version still
+     overwrites self.title with the first line of the config file and requires
+     at least 2 lines. That breaks both of the steps above, and it would treat
+     Polonius Polonius_hamlet_ii_1a.txt as the title.
+
+  Since no single step asks for this change, it's worth a sentence in the
+  ReadMe's Scene Fragments section.
+
+✻ Brewed for 7s · done Monday 11:31 PM
+
+❯ so whats the bug                                                              
+
+⏺ The bug is at scene_fragment.rs:105, and the prepare call at :116 feeds it:
+
+  Self::read_config(config_file, &mut self.title, &mut config)?;   // :116
+  ...
+  *play_title = lines[IDX_PLAY_TITLE].clone();                     // :105
+  for line in &lines[IDX_CHARACTER_FRAGMENTS..] { ... }            // :107
+
+  read_config still treats the first line of the config file as the title, which
+  was right for Lab 1. In Lab 2 the config files have no title line, so three
+  things go wrong.
+
+  1. The first character is dropped. Take hamlet_ii_1a_config.txt:
+  Polonius Polonius_hamlet_ii_1a.txt
+  Reynaldo Reynaldo_hamlet_ii_1a.txt
+  Line 0 is used as the title, and the loop only runs from line 1 on. Only
+  Reynaldo becomes a player, so Polonius never enters and none of his lines are
+  spoken. The same thing drops Polonius from 1b and King from 2a.
+
+  2. The real title is overwritten. Because prepare passes &mut self.title, the
+  title that new(title) set from the [scene] line gets replaced with "Polonius 
+  Polonius_hamlet_ii_1a.txt".
+  - Fragment 1a would print that string as its scene title.
+  - Fragment 1b should have an empty title, since the spec says only a scene's
+    first fragment announces it. It would get "Polonius 
+    Polonius_hamlet_ii_1b.txt" instead, which isn't blank, so enter prints it.
+
+  3. A config with one character fails. MIN_CONFIG_LINES = 2 rejects a config
+  with just one character line, with the error "needs a title and at least one
+  character definition" and exit code 2.
+
+  You can't see any of this when you run the program yet, because Play doesn't
+  create SceneFragments until you rewrite play.rs. That's also why last
+  session's test harness didn't catch it.
+
+  The fix is to drop the play_title parameter and the IDX_PLAY_TITLE and
+  IDX_CHARACTER_FRAGMENTS constants. Then call add_config on every non-blank
+  line, and only error out when the file has no non-blank lines.
+
+✻ Cooked for 11s · done Monday 11:32 PM
+
+❯ why didnt the previous tests catch this?                                      
+
+  Listed 1 directory, ran 2 shell commands (ctrl+o to expand)
+
+⏺ Last session's harness never called the buggy code. Its leftover scratchpad
+  from that session is still on disk, so I could check what it actually ran.
+
+  1. The fragment harness skipped read_config. It added a test-only constructor
+  to its own copy of scene_fragment.rs:
+
+  // harness only: builds a fragment from (name, part file) pairs, bypassing 
+  read_config
+  pub fn harness(title: &str, pairs: &[(&str, &str)]) -> Self {
+      let mut fragment = SceneFragment::new(title);
+      ...
+      fragment.process_config(&config)
+
+  It hard-coded the titles and the (name, part file) pairs and called
+  process_config directly. prepare, read_config and the Hamlet config files were
+  never involved. That's why the 1a → 1b → 2a output matched the sample: it
+  tested entrances, exits, recite and spacing, and went around the one place the
+  bug lives.
+
+  2. The Lab 1 regression suite and fuzzer ran Play, not SceneFragment. They ran
+  the real binary, where main still uses Play::prepare. Play still parses
+  config files the Lab 1 way, and the Lab 1 configs do have a title line, so
+  treating line 0 as the title was correct there. The copy of that code in
+  scene_fragment.rs was never run against Lab 2 configs.
+
+  3. The unit tests don't touch file parsing. They cover Player's ordering
+  traits and players_not_in, and nothing else.
+
+  The deeper cause is that SceneFragment has nothing to drive it until you
+  rewrite play.rs. The harness was a stand-in for that missing code, and the
+  stand-in skipped the config-reading step. Last session's report should have
+  said that prepare and read_config weren't tested. Instead it said the fragment
+  output "matches the sample", which made the coverage sound complete.
+
+  Once Play drives the fragments, running ./lab2 
+  partial_hamlet_act_ii_script.txt and diffing against hamlet_act_ii_scene_1.txt
+  would catch this right away. The Lab 2 version of run_tests.sh should include
+  that check. I can also add a unit test now that runs SceneFragment::prepare
+  on hamlet_ii_1a_config.txt and asserts that both Polonius and Reynaldo are
+  loaded and the title is unchanged. It would fail until you fix read_config.
+
+✻ Baked for 18s · done Monday 11:35 PM
+
+❯ ok so i can fix this later, right? for now lets just follow the site's steps? 
+
+⏺ Yes, it can wait. Nothing in the spec's remaining steps depends on it, and you
+  can't hit it until Play drives the fragments. It does need fixing before you
+  check your output against hamlet_act_ii_scene_1.txt, though. Until then the
+  Hamlet script will be missing Polonius and King and will print the wrong
+  titles. Since it's not tracked anywhere yet, I can add a TODO at
+  scene_fragment.rs:105 so your pre-submission grep -rn TODO catches it.
+
+  The next step on the site is the first play.rs item under "Handling a script
+  file and announcing entrances and exits":
+
+  ▎ At the top of the play.rs file remove the Players and PlayConfig type 
+  ▎ declarations and replace them with a declaration of ScriptConfig type that 
+  ▎ is a vector of (bool, String) tuples, and a Fragments type that is a vector 
+  ▎ of SceneFragment structs.
+
+  Then it goes in order:
+  1. Give Play a single Fragments field, with new() starting it empty, and use
+     Fragments and ScriptConfig throughout.
+  2. process_config: keep a running title, destructure each (bool, String), and
+     push and prepare fragments.
+  3. add_config: handle blank lines, a bare [scene], [scene] title…, and a
+     config file name with extra tokens.
+  4. read_config(script_file, &mut ScriptConfig): return an error if the file
+     can't be opened or is empty.
+  5. prepare: at the end, check that there's at least one fragment and the first
+     one has a title.
+  6. recite: enter_all/enter, then recite, then exit/exit_all across the
+     fragments.
+  7. main.rs: change the usage message to <script_file_name> and rename config
+     to script in names.
+  8. ReadMe: add the "Scene Fragments" subsection.
+
+  Tell me when you want a review after any of these.
+
+✻ Crunched for 8s · done Monday 11:36 PM
+
+❯ so for process_config is it just &mut self now                                
+
+⏺ No, it still takes the config as a parameter. The spec says it should
+  "destructure each tuple in the ScriptConfig argument that was passed to it".
+  Together with the step that says to "replace all uses of the PlayConfig type
+  with the ScriptConfig type", the signature only changes its parameter type:
+
+  fn process_config(&mut self, script_config: &ScriptConfig) -> Result<(), u8>
+
+  It still needs &mut self because it pushes fragments into self's Fragments
+  field.
+
+  The title string that the spec says it "maintains" is a local variable inside
+  the method, not a parameter or a field. It starts empty, gets updated when the
+  method sees a (true, …) tuple, and is cleared after each fragment is created.
+  That clearing is what keeps the title to the first fragment of each scene.
+
+✻ Cogitated for 4s · done Monday 11:40 PM
+
+❯ ok so if true what do i do                                                    
+
+⏺ If the bool is true, the text is a scene title, so you set your local title
+  string to that text and move on to the next tuple. The spec says to "use it to
+  update its title string". Nothing else happens in that branch: no fragment is
+  created and prepare isn't called.
+
+  The false branch is where the title gets used. It's passed to the new
+  SceneFragment there and then cleared.
+
+  Because it's an overwrite, two [scene] lines in a row with no config file
+  between them mean the first title is silently replaced. The spec doesn't ask
+  you to handle that case, but you could whinge about it, or mention it in the
+  ReadMe.
+
+✻ Brewed for 3s · done Monday 11:42 PM
+
+❯ local title string like local var?                                            
+
+⏺ Yes, it's a local variable. You declare it at the top of process_config,
+  before the loop, with something like let mut title = String::new();.
+
+  - Declared before the loop so its value carries over from one tuple to the
+    next. A (true, …) tuple sets it, and the (false, …) tuple that follows uses
+    it.
+  - mut because you overwrite it on a title and clear it after each fragment.
+  - Not a field on Play, because the spec gives Play only the single Fragments
+    field. The title is only needed while the config is being processed, and
+    each SceneFragment keeps its own copy.
+
+✻ Worked for 2s · done Monday 11:42 PM
+
+❯ ok on line 39 why can i reuse scene_title? isnt it moved?                     
+
+  Read 1 file, ran 1 shell command (ctrl+o to expand)
+
+⏺ You can't. It's a move, and the compiler would reject line 39. It hasn't
+  complained yet because play.rs still has name-resolution errors further down
+  (player, PlayConfig, self.players, and so on). rustc stops at those before it
+  gets to borrow checking, which is the pass that reports moves.
+
+  Once those are fixed, it would actually complain at line 34 first:
+
+  for &(is_new_scene, scene_title) in script_config {
+
+  script_config is a &ScriptConfig, so the loop yields &(bool, String). The &
+  pattern tries to copy the tuple out of the reference. bool is Copy, so that
+  part is fine, but String isn't. You'd get E0507, "cannot move out of a shared
+  reference".
+
+  Even if line 34 were fine, lines 36 and 39 have the problem you're asking
+  about. title = scene_title; moves the String. Because it's inside an if,
+  scene_title is only maybe moved by line 39, and Rust treats maybe-moved as
+  moved, so you'd get E0382, "use of possibly-moved value".
+
+  There are two usual fixes:
+  - Bind by reference: for (is_new_scene, scene_title) in script_config. With
+    match ergonomics, is_new_scene is a &bool and scene_title is a &String.
+    You'd then need *is_new_scene in the if, and title = scene_title.clone();
+    (or title.clone_from(scene_title)).
+  - for &(is_new_scene, ref scene_title) in script_config, which copies the bool
+    and borrows the String.
+
+  Either way you clone into title, because the borrowed ScriptConfig owns the
+  String. Also, the spec has you create a fragment only when the bool is false,
+  so the code after the if belongs in an else branch. Otherwise a title line
+  would also create a fragment.
+
+✻ Cogitated for 12s · done Monday 11:44 PM
+
+❯ how does process_config look                                                  
+  Read 1 file (ctrl+o to expand)
+
+⏺ It matches the spec's four steps for the false branch: create the fragment
+  with the title, clear the title, call prepare, and match on the result. The
+  true branch updates the title correctly. A few small things:
+
+  1. The TODO at lines 47–49 is in the wrong place. It's about unreadable part
+     files, which SceneFragment::process_config handles now, and that file
+     already has the same TODO at scene_fragment.rs:38. One part of it does
+     apply here: you call prepare before pushing, while the spec says to push
+     first and then prepare. So you could delete this copy and leave a shorter
+     TODO in the else branch about that ordering difference, or just mention it
+     in the ReadMe. Prepare-then-push is the better choice, since you never keep
+     a half-built fragment and you return immediately on an error anyway.
+  2. &config_line_text (line 41) is a &&String. It compiles because of
+     auto-deref, but config_line_text on its own is already a &String, so drop
+     the &.
+  3. title = String::new() (line 39) works. title.clear() says the same thing
+     more directly and reuses the String's buffer.
+  4. No message on error (line 42). That's fine. SceneFragment::prepare already
+     prints its own ERROR: before it fails, for an unreadable config file, the
+     missing-title check, or a bad part file. So the user still sees why. Just
+     make sure the item 1 fix in read_config keeps an error message for an empty
+     config file.
+
+  One edge case is handled correctly: config files listed after the first
+  scene's fragment get an empty title. If a script lists config files before any
+  [scene] line, the first fragment has a blank title, and your prepare check
+  (next step) should reject that.
+
+  The file still won't build until add_config, read_config and prepare are
+  updated, since they still use PlayConfig and self.title.
+
+✻ Baked for 14s · done Monday 11:51 PM
+
+❯ what is neat is that lines 38-39 are safe for sure in rust, but in smthn like 
+  cpp could be dangerous if that ref is stored internally                       
+
+⏺ Yes, and Rust guarantees it from the function signature alone, without looking
+  inside new.
+
+  Why Rust can promise this. SceneFragment::new(title: &str) -> Self returns a
+  SceneFragment with no lifetime parameter. A struct with no lifetime parameter
+  can't hold a borrowed &str, so new has to copy the title, which is what
+  .to_string() does. Once new returns, the borrow of title has ended, and
+  clearing or reassigning it at line 39 can't affect the fragment.
+
+  Suppose it had been written to store the reference, as struct 
+  SceneFragment<'a> { title: &'a str, … }. The compiler would then reject your
+  loop in two places:
+  - Line 39 would fail with E0506, "cannot assign to title because it is
+    borrowed". The fragment would still be holding a borrow of it.
+  - self.fragments.push(fragment) would require the borrow to outlive
+    process_config. But title is a local that's dropped when the function
+    returns, so you'd get E0597, "title does not live long enough".
+
+  The C++ equivalent fails silently. Say it were written as SceneFragment(const 
+  std::string& t) : title_(t), with a const std::string& or std::string_view
+  member. Then:
+  - title = "" makes every fragment that still refers to it see the new
+    contents. With string_view, the assignment can also reallocate, leaving the
+    view pointing at freed memory.
+  - When process_config returns, title is destroyed, and every stored reference
+    dangles. The code compiles cleanly, and it might even print correctly until
+    the memory gets reused.
+
+  In C++ you'd catch this by reading the constructor, or with a sanitizer at
+  runtime. In Rust, the signature shows whether the struct can keep the
+  reference, and the borrow checker enforces it at the call site. This would fit
+  well in the "insights and observations" part of your ReadMe overview, or in
+  the Scene Fragments section, next to the move/borrow issue you just ran into
+  on line 34.
+
+✻ Worked for 10s · done Monday 11:53 PM
+
+❯ ok whats next for add_config                                                  
+
+⏺ For add_config, the spec says:
+
+  ▎ Modify the implementation of the Play struct's associated add_config 
+  ▎ function so that it ignores blank lines. If the first token is exactly 
+  ▎ [scene] and there are no other tokens then it should also skip the line, but
+  ▎ if whinge mode is on it should complain about the missing scene title. If 
+  ▎ the first token is exactly [scene] and there are additional tokens in the 
+  ▎ line, they should be concatenated with spaces between them into a string 
+  ▎ that is used to push a tuple with (1) true … and (2) that string, into the 
+  ▎ ScriptConfig … If the first token is anything else it should be treated as 
+  ▎ the name of a configuration file and used to push a tuple with (1) false … 
+  ▎ and (2) that token … if there are additional tokens after the configuration 
+  ▎ file name token, and whinge mode is on, the add_config function should 
+  ▎ complain about the additional tokens in the line.
+
+  Signature: change the second parameter to script_config: &mut ScriptConfig. It
+  stays an associated function with no self.
+
+  Four cases, based on the tokens from split_whitespace():
+
+  ┌─────────────────┬───────────────────────────────────────────────────────┐
+  │     Tokens      │                        Action                         │
+  ├─────────────────┼───────────────────────────────────────────────────────┤
+  │ none (blank     │ skip, no whinge                                       │
+  │ line)           │                                                       │
+  ├─────────────────┼───────────────────────────────────────────────────────┤
+  │ [scene] alone   │ skip, whinge about missing title                      │
+  ├─────────────────┼───────────────────────────────────────────────────────┤
+  │ [scene] + more  │ push (true, rest joined with " ")                     │
+  ├─────────────────┼───────────────────────────────────────────────────────┤
+  │ anything else   │ push (false, first token), whinge if there are extra  │
+  │                 │ tokens                                                │
+  └─────────────────┴───────────────────────────────────────────────────────┘
+
+  Things to watch:
+  - "Exactly [scene]" means a case-sensitive comparison against the whole first
+    token. So [Scene] or [scene]extra count as config file names. Joining with
+    single spaces also means extra whitespace in a title collapses to one space,
+    which is the behavior the spec wants.
+  - Constants: the grading notes penalize hard-coded values. Make "[scene]" a
+    named constant, plus constants for the token indices (first token, where the
+    title starts) and the token count for a config line. That last one replaces
+    LINE_TOKEN_COUNT.
+  - Blank lines: read_config currently drops them before calling add_config with
+    lines.retain(...). The spec puts that check in add_config itself, so handle
+    it here, whether or not you keep the retain.
+  - Leftover code: the character-line logic and its constants
+    (LINE_IDX_CHARACTER_NAME, LINE_IDX_CHARACTER_FILE, LINE_TOKEN_COUNT) belong
+    to SceneFragment now, so remove them from play.rs. IDX_PLAY_TITLE,
+    IDX_CHARACTER_FRAGMENTS and MIN_CONFIG_LINES also go away once you rewrite
+    read_config.
+
+  The joining is a one-liner, because slices of &str have a .join(" ") method.
+
+✻ Cogitated for 9s · done Monday 11:55 PM
+
+❯ how does my match look in add_config?                                         
+
+  Read 1 file, ran 2 shell commands (ctrl+o to expand)
+
+⏺ Slice patterns are a good fit here, but arms 3 and 4 need fixing.
+
+  Arm 3 matches every non-empty line. [scene, rest @ ..] has no guard, and ..
+  can match zero elements. So hamlet_ii_1a_config.txt (one token) and foo.txt 
+  extra both land there, as well as real [scene] Title lines. The name scene is
+  just a binding that takes whatever the first token is. It doesn't check that
+  the token is [scene].
+
+  Arm 4 can never be reached. Arm 3 already covers everything it would match.
+  Once the old code below it is gone, rustc will warn unreachable pattern, and
+  you need zero warnings.
+
+  Arm 2 is correct. Because it comes before arm 3, a lone [scene] never gets as
+  far as arm 3. So once arm 3 checks for the directive, its rest will always be
+  non-empty.
+
+  A cleaner option: a &str constant can be used directly as a pattern, so you
+  don't need guards:
+
+  const SCENE_DIRECTIVE: &str = "[scene]";
+  ...
+  match words.as_slice() {
+      [] => ...,
+      [SCENE_DIRECTIVE] => ...,
+      [SCENE_DIRECTIVE, title @ ..] => ...,
+      [config_file, extra @ ..] => ...,
+  }
+
+  This also covers the hard-coded-value deduction. I compiled the bare patterns,
+  without your arm bodies, in a scratch file on 1.71.0 with no warnings. Here's
+  how they sort test lines:
+
+  ┌──────────────┬──────────────────────────────────────────────────────────┐
+  │     Line     │                      Arm it matches                      │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ ""           │ blank                                                    │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ [scene]      │ missing title                                            │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ [scene]  A   │ title, with "A b" from title.join(" ")                   │
+  │  b           │                                                          │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ x.txt        │ config file, extra empty                                 │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ x.txt y z    │ config file, 2 extra tokens, so whinge                   │
+  ├──────────────┼──────────────────────────────────────────────────────────┤
+  │ [Scene] t    │ config file, because the comparison is case-sensitive as │
+  │              │  the spec says                                           │
+  └──────────────┴──────────────────────────────────────────────────────────┘
+
+  The patterns cover every possible slice, so the compiler confirms the match is
+  exhaustive and you don't need a _ arm.
+
+  Cleanup in this function:
+  - Delete lines 63–77, the old character-line logic.
+  - Rename play_config to script_config to match the spec and process_config.
+  - whinge (line 54) is unused until you fill in the arms, so it will warn until
+    then.
+
+✻ Worked for 28s · done 12:02 AM
+
+❯ how is it? if good, fill in the print TODOs                                   
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ The logic checks out—the four arms satisfy the spec, don't overlap, and cover
+  all cases. I filled in both print statements, adjusting the condition for the
+  second one as well.
+
+⏺ Update(src/lab2/play.rs)
+  ⎿  Added 4 lines, removed 1 line
+      58              [] => return,
+      59              [SCENE_DIRECTIVE] => {
+      60                  if whinge {
+      61 -                    // TODO: print smthn                       
+      61 +                    eprintln!(                                 
+      62 +                        "WARNING: Skipping script line \"{}\" b
+         +ecause its {} directive has no scene title",                   
+      63 +                        config_line, SCENE_DIRECTIVE           
+      64 +                    );                                         
+      65                  }
+      66              }
+      67              [SCENE_DIRECTIVE, title @ ..] => script_config.push
+          ((true, title.join(" "))),
+
+⏺ Update(src/lab2/play.rs)
+  ⎿  Added 7 lines, removed 2 lines
+      68              [config_file, extra @ ..] => {
+      69                  script_config.push((false, config_file.to_strin
+          g()));
+      70  
+      71 -                if whinge {                                    
+      72 -                    // TODO: print smthn                       
+      71 +                if whinge && !extra.is_empty() {               
+      72 +                    eprintln!(                                 
+      73 +                        "WARNING: Ignoring extra tokens \"{}\" 
+         +after configuration file {} in script line \"{}\"",            
+      74 +                        extra.join(" "),                       
+      75 +                        config_file,                           
+      76 +                        config_line                            
+      77 +                    );                                         
+      78                  }
+      79              }
+      80          }
+
+⏺ Both whinge messages are filled in, in the same WARNING: … style as your other
+  whinges:
+
+  - Bare [scene]: WARNING: Skipping script line "[scene]" because its [scene] 
+    directive has no scene title
+  - Config file with extra tokens: WARNING: Ignoring extra tokens "y z" after 
+    configuration file x.txt in script line "x.txt y z"
+
+  I changed one condition. In the config-file arm I changed if whinge to if 
+  whinge && !extra.is_empty(). extra @ .. also matches zero tokens, so with only
+  if whinge it would have printed a warning for every normal config line like
+  hamlet_ii_1a_config.txt.
+
+  I haven't compiled it, because the file doesn't build yet. Two things block
+  it:
+
+  - Lines 74–88: the old character-line code is still below the match, and it
+    uses play_config, which no longer exists. Deleting it also makes the return
+    in [] => return unnecessary, so that arm can just be {}.
+  - Unused constants: once that code is gone, LINE_IDX_CHARACTER_NAME,
+    LINE_IDX_CHARACTER_FILE and LINE_TOKEN_COUNT at the top of the file are
+    unused and will cause warnings.
+
+  One optional change: SCENE_DIRECTIVE is declared inside the function, while
+  your other constants are at the top of the module. Moving it up would be more
+  consistent. Leaving it where it is also works, since nothing else uses it.
+
+✻ Cooked for 19s · done 12:10 AM
+
+❯ whats next for read_config                                                    
+
+⏺ For read_config, the spec says:
+
+  ▎ Modify the implementation of the Play struct's associated read_config 
+  ▎ function so that it only takes in a reference to a String with the name of a
+  ▎ script file, and a mutable reference to a ScriptConfig. If the script file 
+  ▎ cannot be opened or no lines were read from it, the function should use 
+  ▎ eprintln! generate an appropriate error message and then should return an 
+  ▎ error indicating that script generation failed. Otherwise, the function 
+  ▎ should use the associated add_config function to add tuples to the 
+  ▎ ScriptConfig that was passed in, and should then return Ok(()).
+
+  Signature: fn read_config(script_file: &str, script_config: &mut ScriptConfig)
+  -> Result<(), u8>. The play_title parameter goes away.
+
+  What changes from your current version:
+  - Opening the file: keep the grab_trimmed_file_lines check. Just change the
+    message to say "script file" instead of "configuration file". The eprintln!
+    has to stay unconditional; it isn't a whinge.
+  - Empty file: replace the MIN_CONFIG_LINES check with a check for
+    lines.is_empty(), and give it its own message, such as "Script file X is
+    empty". That keeps it distinct from the can't-open error, which the grading
+    notes want.
+  - Title: remove the *play_title = lines[IDX_PLAY_TITLE] line. Titles now come
+    from [scene] lines through add_config.
+  - Loop: loop over all the lines instead of &lines[IDX_CHARACTER_FRAGMENTS..],
+    calling Self::add_config(line, script_config) for each.
+  - Constants: delete IDX_PLAY_TITLE, IDX_CHARACTER_FRAGMENTS and
+    MIN_CONFIG_LINES. Nothing else uses them.
+
+  One choice to make: the retain. add_config already skips blank lines, so you
+  can drop lines.retain(...). What it decides is what "no lines were read"
+  means:
+  - Without retain: only a 0-byte file is an error. A file of nothing but blank
+    lines passes here, ends up with no fragments, and gets caught by prepare's
+    end check, which prints a different message.
+  - With retain: a blank-only file is also reported as empty, at this point.
+
+  Either way meets the spec. Keeping the retain gives the clearer error message
+  for a blank-only file. Whichever you pick, write it down in the ReadMe.
+
+  Error codes: as written, the spec has both failures return "script generation
+  failed". If you go with separate codes, as I suggested earlier, this is where
+  you'd add a distinct code for an unreadable script and one for an empty
+  script.
+
+✻ Sautéed for 11s · done 12:11 AM
+
+❯ how does read_config look? and for recite how many fragments are we           
+  guaranteedt o have                                                            
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ read_config
+
+  It's correct and matches the spec. The open failure and the empty file get
+  separate messages, and keeping the retain means a file with only blank lines
+  also counts as empty. A few small things:
+
+  - Line 81: the comment still says "configuration file". Change it to "script
+    file".
+  - Line 91: {script_file} (an inline format argument) works on 1.71, since it's
+    been stable since 1.58. Every other print in your code uses {} with a
+    positional argument, so switch it for consistency.
+  - Line 96: &line works just as well as line.as_str(). Either is fine.
+  - Elsewhere in the file:
+    - Lines 8–10 (LINE_IDX_* and LINE_TOKEN_COUNT) are unused now, so they'll
+      produce warnings. Delete them.
+    - Line 53's return can just be {}.
+
+  How many fragments recite can count on
+
+  At least one, but only after you add prepare's end check, which isn't there 
+  yet. The spec says:
+
+  ▎ At the end of the Play struct's associated prepare method, if there are 
+  ▎ fragments in its Fragments field and the first fragment has a title, it 
+  ▎ should return Ok(()). Otherwise it should use eprintln! to generate an 
+  ▎ appropriate error message and should return an error indicating that script 
+  ▎ generation failed.
+
+  main only calls recite after prepare returns Ok, so with that check in place,
+  recite always has at least one fragment. That isn't true right now. A script
+  containing only [scene] Foo passes read_config but produces no fragments, and
+  process_config still returns Ok.
+
+  You're never guaranteed two. A script with one [scene] line and one config
+  file is valid. In that case the first fragment is also the last, so it should
+  get both enter_all and exit_all, and nothing gets enter(prev) or exit(next).
+
+  Line 109 has two problems:
+  - self.fragments.len() - 1 underflows and panics when there are no fragments.
+    recite is pub, so Play::new().recite() would crash, even though main never
+    does that. It's better if recite handles an empty play as "nothing to do"
+    instead of relying on prepare having been called.
+  - 1..=len - 1 is the same as 1.., and skipping fragment 0 doesn't match the
+    spec. Every fragment calls enter, recite and exit. Only which enter and exit
+    depends on its position.
+
+  An approach that handles 0, 1 and many fragments without special cases is to
+  loop over the indices with enumerate():
+  - Index 0 gets enter_all; any other index gets enter(&self.fragments[i - 1]).
+  - Then recite.
+  - The last index gets exit_all; any other index gets exit(&self.fragments[i + 
+    1]).
+
+  One thing to know: SceneFragment::recite takes &mut self, but enter and exit
+  need shared references to the neighboring fragments. If you hold &mut 
+  self.fragments[i] while also borrowing [i - 1], the borrow checker will
+  complain. The fix is to finish each call before starting the next one: call
+  enter, then self.fragments[i].recite(), then exit, each as its own statement.
+  Each borrow ends when its statement does.
+
+✻ Churned for 17s · done 12:19 AM
+
+❯ wait so for exit, say we have fragments A B C, C will exit all, B exits w/o   
+  C's and A exits w/o B's. but couldnt A include C's?                           
+
+⏺ Yes, A can include players from C, and the code still handles them correctly.
+  Exits and entrances only ever compare neighboring fragments, so a character
+  like that exits and then enters again.
+
+  Say X is in A and C but not in B:
+
+  A:  X, Y        → exit(B): X isn't in B, so "[Exit X.]"
+  B:  Y, Z        → enter(A): Z is new, so "[Enter Z.]"   (X isn't on stage)
+                  → exit(C): Y and Z aren't in C, so "[Exit Z.]" "[Exit Y.]"
+  C:  X           → enter(B): X wasn't in B, so "[Enter X.]"
+                  → exit_all: "[Exit X.]"
+
+  That's what you'd want on a real stage. X can't stay on stage through B
+  without being in B. X walks off after A and comes back for C. Looking at C
+  when A exits would leave X on stage, silent, through all of B.
+
+  The spec words it in terms of the next fragment only: "the exit of any
+  character that is not in the subsequent scene fragment". Entrances work the
+  same way, looking only at the previous fragment.
+
+  There's a related quirk with scene boundaries. Neighboring fragments are
+  compared even when a [scene] line sits between them. If someone is in the last
+  fragment of Scene I and the first fragment of Scene II, they never exit or
+  re-enter across the scene change, even though the setting moves. The Hamlet
+  example doesn't hit this, because Polonius and Ophelia are replaced entirely
+  in II.2. The spec calls this "a simple version of character entrances and
+  exits" that Lab 3 will extend, so follow the spec for now. The quirk is worth
+  a line in the ReadMe's Scene Fragments section, or under insights.
+
+✻ Worked for 9s · done 12:23 AM
+
+❯ how is my recite                                                              
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/lab2" && cargo
+      +1.71.0 build 2>&1 | grep -E "^(error|warning)|-->" | head -20)
+  ⎿  error[E0425]: cannot find value `MIN_CONFIG_LINES` in this scope
+       --> src/lab2/scene_fragment.rs:93:26
+     error[E0425]: cannot find value `IDX_PLAY_TITLE` in this scope
+     … +7 lines (ctrl+o to expand)
+  ⎿  Updated src/lab2/play.rs (+1 -1)
+      109          self.fragments
+      110              .iter_mut()
+      111              .enumerate()
+      112 -            .for_each(|(idx, fragment)| {                     
+      112 +            .for_each(|&(idx, fragment)| {                    
+      113                  if idx == 0 {
+      114                      fragment.enter_all();
+      115                  } else {
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ Getting the full compiler message for the type error at play.rs:112.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The build output changed between runs, so play.rs may have changed in the
+  meantime. Re-reading it.
+  Read 1 file (ctrl+o to expand)
+
+⏺ The build stops on errors in scene_fragment.rs, so it hasn't reached the
+  borrow check for recite yet. I'm compiling the same loop shape in a scratch
+  file to see what the borrow checker says.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The enter/recite/exit logic is right, but this version won't compile. The real
+  build hasn't reached it yet, because it stops on the constants you removed
+  from scene_fragment.rs (lines 93, 101 and 103 still use them). I compiled the
+  same loop shape in a scratch file on 1.71.0 with edition 2021, which is what
+  your Cargo.toml uses, and got:
+
+  error[E0502]: cannot borrow `self.fragments` as immutable because it is also 
+  borrowed as mutable
+
+  Why: self.fragments.iter_mut() mutably borrows the whole vector for the entire
+  loop, because the iterator lives that long. Inside the closure,
+  &self.fragments[idx - 1], self.fragments.len() and &self.fragments[idx + 1]
+  each need a shared borrow of the same vector while the mutable borrow is still
+  active. Rust can't tell that idx - 1 and idx are different elements, so it
+  rejects it. This is the problem I mentioned last time.
+
+  The fix: loop over indices instead of holding an iterator, and make each call
+  a separate statement:
+
+  for idx in 0..self.fragments.len() {
+      // enter: self.fragments[idx].enter(&self.fragments[idx - 1])  ← two 
+  shared borrows, fine
+      // recite: self.fragments[idx].recite()                          ← one 
+  mutable borrow, ends here
+      // exit:  self.fragments[idx].exit(&self.fragments[idx + 1])    ← two 
+  shared borrows, fine
+  }
+
+  Each indexing expression borrows only for its own statement. So the mutable
+  borrow for recite() has ended before exit borrows again. Your if/else
+  structure carries over unchanged.
+
+  What's already right:
+  - Zero fragments: the loop body never runs, so len() - 1 is never evaluated
+    and can't underflow. That fixes the problem from your earlier version.
+  - One fragment: index 0 is both first and last, so it gets enter_all and
+    exit_all.
+  - Neighbors: enter uses the previous fragment and exit uses the next, as the
+    spec says.
+
+  prepare still needs its end check: there must be at least one fragment, and
+  the first must have a title. Otherwise print an error and return Err.
+
+✻ Baked for 37s · done 12:28 AM
+
+❯ how is it now                                                                 
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ recite looks good now. I compiled the same loop shape in a scratch file on
+  1.71.0, and it compiles and runs. Each indexing expression borrows only for
+  its own statement, so the borrow checker accepts it. Zero fragments skips the
+  loop, one fragment gets enter_all and exit_all, and everything else uses its
+  neighbors as the spec says.
+
+  One small wording fix for the comment. The problem was iter_mut(), not
+  for_each: a plain for loop over iter_mut() fails the same way. Something like:
+
+  // Index rather than iter_mut(): a mutable iterator borrows the whole vector 
+  for the
+  // loop's duration, which blocks the shared borrows of the neighboring 
+  fragments that
+  // enter and exit need.
+
+  The real build still fails, but only in scene_fragment.rs. You've removed
+  MIN_CONFIG_LINES, IDX_PLAY_TITLE and IDX_CHARACTER_FRAGMENTS, but read_config
+  still uses them at lines 93, 101 and 103. That's the title-line bug from
+  earlier, half-fixed. Finishing it is the same change you just made in
+  Play::read_config:
+  - Drop the play_title parameter and the *play_title = … line, and pass only
+    the config from prepare.
+  - Replace the < MIN_CONFIG_LINES check with an empty check.
+  - Run add_config on every line.
+
+  Still left on the spec list:
+  1. Play::prepare end check: if self.fragments is empty or the first fragment's
+     title is blank, print an error and return Err. You'll need a way to read a
+     fragment's title from play.rs, because title is private. A pub(crate)
+     field or a small has_title() method on SceneFragment would work.
+  2. main.rs: change the usage message to <script_file_name>, and rename
+     config_file_name and ARGS_IDX_CONFIG_FILE to script equivalents.
+  3. Cleanup: remove the unused PlayConfig and LINE_* items in play.rs, and
+     change [] => return to {}.
+
+  Once it builds, I can run ./lab2 partial_hamlet_act_ii_script.txt and diff the
+  output against hamlet_act_ii_scene_1.txt.
+
+✻ Sautéed for 17s · done 12:31 AM
+
+❯ does read_config in scene_fragment still take a PlayConfig                    
+
+⏺ Yes. SceneFragment::read_config still fills a PlayConfig, which is
+  Vec<(String, String)>, one (character name, part file) pair per line. A
+  fragment's config file still lists characters, so that type is still the right
+  one.
+
+  The ScriptConfig changes in the spec apply only to play.rs:
+
+  ▎ At the top of the play.rs file remove the Players and PlayConfig type 
+  ▎ declarations and replace them with a declaration of ScriptConfig type …
+
+  The scene_fragment.rs step only says to copy play.rs and change Play to
+  SceneFragment. The config type stays as it was.
+
+  The only thing to change in read_config there is the title handling. Remove
+  the play_title parameter so the signature becomes fn read_config(config_file: 
+  &str, play_config: &mut PlayConfig) -> Result<(), u8>, then update the call in
+  prepare to match.
+
+  Optionally, the name PlayConfig is a bit misleading now that it describes one
+  fragment's cast. Something like FragmentConfig would read better. The spec
+  doesn't require the rename, so if you keep the name, a one-line comment on the
+  type is enough.
+
+✻ Worked for 5s · done 12:33 AM
+
+❯ how is it now                                                                 
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Fixed scene_fragment.rs and read_config, confirmed it builds cleanly on 1.71.0
+  (only unused LINE_* constant warnings remain, which I'll remove). Now running
+  the Hamlet script against the sample output.
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ The Hamlet script now produces correct output.
+
+  Sample comparison: I ran ./lab2 partial_hamlet_act_ii_script.txt. It exits 0,
+  and the first 216 lines match hamlet_act_ii_scene_1.txt once trailing
+  whitespace is ignored. The only differences are that the sample has a trailing
+  space after the speaker names (Polonius. ), which was already known from last
+  session. The sample file only covers Scene I. Your output then continues
+  correctly into Scene II:
+  - There's a blank line, then the Scene II title, then another blank line.
+  - King, Queen, Rosencrantz and Guildenstern enter in the order they first
+    speak.
+  - At the end they exit in reverse: [Exit Guildenstern.], [Exit Rosencrantz.],
+    [Exit Queen.], [Exit King.]. The first two lines match the spec's example.
+
+  That confirms the title-line bug is fixed. Polonius is back in 1a and 1b, and
+  King is back in 2a.
+
+  The prepare end check is still missing, and it shows. I tried two bad scripts
+  in the scratchpad, and both should fail:
+
+  ┌───────────────────────────────┬────────────────────┬────────────────────┐
+  │            Script             │      Expected      │       Actual       │
+  ├───────────────────────────────┼────────────────────┼────────────────────┤
+  │ hamlet_ii_1a_config.txt with  │ error, first       │ runs the fragment  │
+  │ no [scene]                    │ fragment has no    │ untitled, exit 0   │
+  │                               │ title              │                    │
+  ├───────────────────────────────┼────────────────────┼────────────────────┤
+  │ [scene] Only a title with no  │ error, no          │ prints nothing,    │
+  │ config files                  │ fragments          │ exit 0             │
+  └───────────────────────────────┴────────────────────┴────────────────────┘
+
+  Still left:
+  1. Add the Play::prepare end check. You'll need access to the fragment's
+     title, either through pub(crate) or a has_title() method.
+  2. Delete LINE_* and PlayConfig in play.rs (lines 8–10) to get to zero
+     warnings, and change [] => return to {}.
+  3. In main.rs, change the usage message to <script_file_name> and rename the
+     config names to script.
+
+  After that, the code side of the spec is done. What's left is the comment and
+  ReadMe TODOs, the three design-decision TODOs, and converting the test
+  scripts. I can do the test scripts once you've finished these three.
+
+✻ Crunched for 28s · done 12:37 AM
+
+❯ whats the prepare end check                                                   
+
+⏺ The end check is the last step the spec gives for Play::prepare:
+
+  ▎ At the end of the Play struct's associated prepare method, if there are 
+  ▎ fragments in its Fragments field and the first fragment has a title, it 
+  ▎ should return Ok(()). Otherwise it should use eprintln! to generate an 
+  ▎ appropriate error message and should return an error indicating that script 
+  ▎ generation failed.
+
+  Where it goes: right now prepare ends with self.process_config(&config) as its
+  return value. Change that to self.process_config(&config)?; and put the check
+  after it. Then a fragment that fails to load returns early, as it does now,
+  and the check only runs when everything loaded.
+
+  What it checks: both of these must hold.
+  1. self.fragments isn't empty. This is what makes it safe for recite to assume
+     there's at least one fragment.
+  2. The first fragment's title isn't blank. Use the same test as enter_with,
+     !title.trim().is_empty(), so "has a title" means the same thing in both
+     places.
+
+  If either fails, print an ERROR: with eprintln!, unconditionally, and return
+  Err. Use two separate messages, such as "script has no configuration files"
+  and "script must begin with a [scene] title", so the user knows which problem
+  they hit.
+
+  In practice, check 2 means the script didn't start with a [scene] line.
+  add_config only stores titles that have at least one token, so any fragment
+  created after a [scene] line has a non-blank title. The first fragment can
+  only be untitled if a config file is listed before any [scene] line, which is
+  your notitle case. The nofrag case, with only [scene] Only a title, fails
+  check 1.
+
+  Access: title is private to SceneFragment, so play.rs can't read it. Either:
+  - add a small pub fn has_title(&self) -> bool to SceneFragment, and also use
+    it in enter_with so the check is written once, or
+  - make the field pub(crate), as you did with Player::name.
+
+  A method is the cleaner choice, because Play never needs the title text
+  itself, only whether there is one.
+
+✻ Sautéed for 9s · done 12:39 AM
+
+❯ why is my match wrong                                                         
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The parser rejects line 104 because a match guard (if …) can't go inside a
+  pattern. A guard belongs to the whole arm and always comes after the complete
+  pattern:
+
+  pattern if condition => ...
+
+  Putting it inside ( … ) as part of None | … isn't valid syntax. The parser
+  then tries to read if as a variable name, which is why you see the odd
+  follow-on errors like "variable if is not bound".
+
+  Fix: split it into separate arms. You want separate error messages for the two
+  failures anyway:
+
+  match self.fragments.first() {
+      None => { /* no fragments: eprintln + Err */ }
+      Some(first) if <first has no title> => { /* untitled: eprintln + Err */ }
+      Some(_) => Ok(()),
+  }
+
+  If you do want one arm for both, the guard has to go at the end of the arm and
+  cover both cases, which gets awkward. Two arms is clearer.
+
+  The function has a few more problems that will show up once it parses:
+  1. Nothing is returned. prepare returns Result<(), u8>, but the match arms
+     evaluate to (). Make the match the last expression with no semicolon, and
+     have each arm return Err(...) or Ok(()).
+  2. first.title is private. SceneFragment's title field isn't visible from
+     play.rs, so you'll get E0616. That's the has_title() method or pub(crate)
+     field from before.
+  3. is_empty() vs blank: for consistency with enter_with, check
+     trim().is_empty(). Wrapping it in has_title() keeps the two from drifting
+     apart.
+  4. self.fragments.iter().next() works, but self.fragments.first() is the usual
+     way to write it.
+  5. Some(first) => {}: first is unused there, which gives a warning. Use
+     Some(_).
+  6. eprintln!(""): this still needs the actual messages.
+
+✻ Cogitated for 12s · done 12:45 AM
+
+❯ how is it now? if good fill in eprintln                                       
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ The structure checks out and builds cleanly on 1.71.0—each arm returns a
+  value, the guard's placed correctly, and title is reachable now that it's
+  pub(crate). Next I'll fill in the messages.
+
+⏺ Update(src/lab2/play.rs)
+  ⎿  Added 4 lines, removed 1 line
+      102  
+      103          match self.fragments.first() {
+      104              None => {
+      105 -                eprintln!("");                                
+      105 +                eprintln!(                                    
+      106 +                    "ERROR: Script file {} does not name any c
+          +onfiguration files",                                          
+      107 +                    script_file                               
+      108 +                );                                            
+      109                  Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+      110              }
+      111              Some(first) if first.title.is_empty() => {
+
+⏺ Update(src/lab2/play.rs)
+  ⎿  Added 4 lines, removed 1 line
+      109                  Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+      110              }
+      111              Some(first) if first.title.is_empty() => {
+      112 -                eprintln!("");                                
+      112 +                eprintln!(                                    
+      113 +                    "ERROR: Script file {} must give a [scene]
+          + title before its first configuration file",                  
+      114 +                    script_file                               
+      115 +                );                                            
+      116                  Err(ERR_FAILED_TO_GENERATE_SCRIPT)
+      117              }
+      118              Some(_) => Ok(()),
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ The errors print, but the exit code comes back 0 when it should be 2. I'm
+  checking whether that's my shell loop or the program.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Both messages are filled in, and the build is clean on 1.71.0, with no
+  warnings or errors.
+
+  The exit code of 0 was a mistake in my test loop. $(basename $f) ran inside
+  the same echo, and its success reset $? before it was printed. Running the
+  binary directly shows the real codes:
+
+  ┌───────────────────────────────────┬───────────────────────────────┬─────┐
+  │              Script               │            stderr             │ $?  │
+  ├───────────────────────────────────┼───────────────────────────────┼─────┤
+  │                                   │ ERROR: Script file … must     │     │
+  │ hamlet_ii_1a_config.txt with no   │ give a [scene] title before   │ 2   │
+  │ [scene]                           │ its first configuration file  │     │
+  │                                   │ and Error: 2                  │     │
+  ├───────────────────────────────────┼───────────────────────────────┼─────┤
+  │                                   │ ERROR: Script file … does not │     │
+  │ [scene] Only a title only         │  name any configuration files │ 2   │
+  │                                   │  and Error: 2                 │     │
+  ├───────────────────────────────────┼───────────────────────────────┼─────┤
+  │ /nonexistent                      │ can't-read error              │ 2   │
+  ├───────────────────────────────────┼───────────────────────────────┼─────┤
+  │ no arguments                      │ usage                         │ 1   │
+  ├───────────────────────────────────┼───────────────────────────────┼─────┤
+  │ partial_hamlet_act_ii_script.txt  │ —                             │ 0   │
+  └───────────────────────────────────┴───────────────────────────────┴─────┘
+
+  One optional change: line 108 uses first.title.is_empty(), while enter_with
+  uses trim().is_empty(). In practice the result is the same, because add_config
+  joins non-whitespace tokens and so never creates a whitespace-only title.
+  Still, SceneFragment::new is pub, so a has_title() method used in both places
+  would keep the two checks from drifting apart.
+
+  Still left in the code: the main.rs renames, changing the usage message to
+  <script_file_name> and config_file_name/ARGS_IDX_CONFIG_FILE to script
+  equivalents. After that, the spec's implementation steps are done. The rest is
+  the comment, ReadMe and design-decision TODOs, plus converting the test
+  scripts.
+
+✻ Cooked for 33s · done 12:48 AM
+
+❯ i think i fixed main.rs                                                       
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ My zsh redirect sent stdout into the pipe as well, so that output isn't a
+  valid stderr check. Re-running it under bash so stdout and stderr stay
+  separate.
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ main.rs is done. The usage message, the parameter and variable names, and the
+  ARGS_IDX_SCRIPT_FILE constant now all say script. It builds on 1.71.0 with no
+  warnings, and these checks all came out right:
+
+  ┌────────────────┬────────────────────────────────────────────────────────┐
+  │      Run       │                         Result                         │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ no arguments   │ usage: ./target/debug/lab2 <script_file_name>          │
+  │                │ [whinge], Error: 1, exit 1                             │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ a b (bad       │                                                        │
+  │ optional       │ usage message, exit 1                                  │
+  │ argument)      │                                                        │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Hamlet script  │ exit 0                                                 │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Hamlet script  │ no warnings on stdout; on stderr, one WARNING: Line 0  │
+  │ with whinge    │ is missing for each of the three fragments, because    │
+  │                │ each fragment's line numbers start at 1                │
+  └────────────────┴────────────────────────────────────────────────────────┘
+
+  The repeated "Line 0 is missing" is what the spec asks for. Each fragment's
+  recite starts counting at 0 again, and the spec says to whinge about a missing
+  line 0. Mention it in the ReadMe so a grader doesn't read it as a bug.
+
+  One cleanup: the TODO on line 3 of main.rs (switch to a glob import) is
+  already done, since line 7 uses declarations::*. You can delete it.
+
+  All the code steps in the spec are now implemented. What's left:
+  1. Header comments and function summary comments in every .rs file.
+  2. The three design-decision TODOs: an empty fragment, tied line numbers
+     across players, and sort vs sort_by_key. They're in scene_fragment.rs and
+     player.rs.
+  3. The ReadMe:
+     - Overview, plus build and run instructions.
+     - Structs, Return Wrapper, Scene Fragments and Testing subsections.
+     - The documentation TODOs, including the scene-boundary quirk and the
+       read_config title fix.
+     - AI citations for this session and the last two.
+  4. Converting run_tests.sh, fuzz_test.py and gen_output.sh to Lab 2.
+  5. Committing. The last commit is from before the play.rs rewrite, and the
+     scene-fragment transcript is still untracked.
+
+  The test scripts are AI work under your setup. Should I convert them next?
+
+✻ Churned for 18s · done 12:49 AM
+
+❯ yes im going to step away for awhile, please convert them.                    
+
+  Ran 2 shell commands (ctrl+o to expand)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ retry                                                                         
+
+⏺ Continuing with the test-script conversion. First I'm checking the Lab 1
+  inputs I can reuse.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ The format check confirms fragments end with an exit and start fresh with an
+  entrance, re-announcing the speaker. Now I'll build the hand-made inputs in a
+  new test_inputs/ directory, reusing the Lab 1 part files.
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/lab2" && mkdir
+      test_inputs && cp ../lab1/{Banquo,Fleance,Macbeth,Servant,Ghost,Messenger,
+      Sentinel,King}.txt…)
+  ⎿  51
+  ⎿  Created test_inputs/Servant.txt (+0 -0)
+  ⎿  Created test_inputs/a_directory/.keep (+0 -0)
+  ⎿  Created test_inputs/empty_script.txt (+0 -0)
+  ⎿  Created test_inputs/Banquo.txt (+12 -0)
+       1 +5 Hold, take my sword.--There's husbandry in heaven;           
+       2 +1 How goes the night, boy?                                     
+       3 +3 And she goes down at twelve.                                 
+       4 +6 Their candles are all out.--Take thee that too.              
+       5 +7 A heavy summons lies like lead upon me,                      
+       6 +8 And yet I would not sleep: merciful powers,                  
+       7 +9 Restrain in me the cursed thoughts that nature               
+       8 +10 Gives way to in repose!--Give me my sword.--                
+       9 +11 Who's there?                                                
+      10 +13 What, sir! not yet at rest? The king's a-bed:               
+      11 +14 He hath been in unusual pleasure and                        
+      12 +15 Sent forth great largess to your offices.                   
+  ⎿  Created test_inputs/Fleance.txt (+2 -0)
+      1 +2 The moon is down; I have not heard the clock.                 
+      2 +4 I take't, 'tis later, sir.                                    
+  ⎿  … 46 more files changed
+
+⏺ Before writing expectations into the suite, I'm running every new input once
+  to see what the program actually does.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ All inputs match expectations, though gaps.txt shows line-1 entries ordered by
+  text due to sort() tie-breaking—worth revisiting your sort vs sort_by_key
+  TODO. Now writing the new run_tests.sh.
+
+⏺ Write(run_tests.sh)
+  ⎿  Added 171 lines, removed 67 lines
+        1  #!/bin/sh
+        2 -# TODO: adapt for Lab 2 (binary name, script files instead of 
+          -config files, new inputs). Lab 1 inputs now live in ../lab1.  
+        2  #
+        4 -# run_tests.sh - regression tests for CSE 5402 Lab 1.         
+        3 +# run_tests.sh - regression tests for CSE 5402 Lab 2.         
+        4  #
+        6 -# Builds the program, then runs it over every configuration fi
+          -le in this                                                    
+        7 -# directory and checks the process exit status, the error code
+          - the program                                                  
+        8 -# reports, and a distinguishing piece of its output.  Prints P
+          -ASS or FAIL for                                               
+        9 -# each case and exits non-zero if any case failed.            
+        5 +# Builds the program (failing if the build prints any warning)
+          +, runs the unit                                               
+        6 +# tests, then runs the program over the provided Hamlet script
+          + and the hand-made                                            
+        7 +# inputs in test_inputs/.  Each case checks the exit status, t
+          +he "Error: N" line                                            
+        8 +# the return wrapper prints, and what appears on standard outp
+          +ut and standard                                               
+        9 +# error separately, so whinge output must reach stderr and nev
+          +er stdout.  Some                                              
+       10 +# cases also compare standard output against an expected outpu
+          +t file.  Prints                                               
+       11 +# PASS or FAIL for each case and exits non-zero if any case fa
+          +iled.                                                         
+       12  #
+       11 -# Usage: sh run_tests.sh                                      
+       13 +# Usage: sh run_tests.sh      (from the lab2 package directory
+          +)                                                             
+       14  
+       13 -LAB1=./target/debug/lab2                                      
+       15 +ROOT=$(pwd)                                                   
+       16 +BIN=$ROOT/target/debug/lab2                                   
+       17 +SAMPLE=$ROOT/hamlet_act_ii_scene_1.txt                        
+       18  PASSES=0
+       19  FAILURES=0
+       20  
+       17 -# check <description> <expected exit status> <expected error t
+          -ag> <expected                                                 
+       18 -# output pattern> <arguments...>                              
+       21 +# directory the program runs in, since scripts name files rela
+          +tive to it                                                    
+       22 +DIR=$ROOT                                                     
+       23 +                                                              
+       24 +TMP=$(mktemp -d) || exit 1                                    
+       25 +trap 'rm -rf "$TMP"' EXIT                                     
+       26 +CR=$(printf '\r')                                             
+       27 +                                                              
+       28 +# record <description> <failure reason, or empty for a pass>  
+       29 +record() {                                                    
+       30 +    if [ -z "$2" ]; then                                      
+       31 +        PASSES=$((PASSES + 1))                                
+       32 +        printf 'PASS  %s\n' "$1"                              
+       33 +    else                                                      
+       34 +        FAILURES=$((FAILURES + 1))                            
+       35 +        printf 'FAIL  %s (%s)\n' "$1" "$2"                    
+       36 +    fi                                                        
+       37 +}                                                             
+       38 +                                                              
+       39 +# run <arguments...> - run the program in $DIR, capturing stdo
+          +ut, stderr and status                                         
+       40 +run() {                                                       
+       41 +    (cd "$DIR" && "$BIN" "$@") > "$TMP/out" 2> "$TMP/err"     
+       42 +    STATUS=$?                                                 
+       43 +}                                                             
+       44 +                                                              
+       45 +# matches <file> <pattern> - succeeds if the pattern is satisf
+          +ied by the file:                                              
+       46 +# "-" always matches, "!pattern" requires the pattern to be ab
+          +sent, and any                                                 
+       47 +# other pattern must appear on at least one line              
+       48 +matches() {                                                   
+       49 +    case $2 in                                                
+       50 +        -) return 0 ;;                                        
+       51 +        !*) ! grep -q -- "${2#!}" "$1" ;;                     
+       52 +        *) grep -q -- "$2" "$1" ;;                            
+       53 +    esac                                                      
+       54 +}                                                             
+       55 +                                                              
+       56 +# check <description> <expected status> <stdout pattern> <stde
+          +rr pattern> <arguments...>                                    
+       57  #
+       20 -# The expected error tag is the "Error: N" line that Rust's Te
+          -rmination                                                     
+       21 -# implementation prints on standard error when main returns Er
+          -r(N), or "-" when                                             
+       22 -# the program is expected to succeed.  The expected output pat
+          -tern is a grep                                                
+       23 -# pattern that must appear somewhere in the program's combined
+          - output, or "-"                                               
+       24 -# when no particular text is required; prefixing the pattern w
+          -ith "!" instead                                               
+       25 -# requires that the pattern does not appear anywhere in the ou
+          -tput.                                                         
+       58 +# A non-zero status must be reported by the return wrapper as 
+          +"Error: N" on                                                 
+       59 +# stderr, and a zero status must not report any error.        
+       60  check() {
+       61      description=$1
+       62      expected_status=$2
+       29 -    expected_error=$3                                         
+       30 -    expected_pattern=$4                                       
+       63 +    out_pattern=$3                                            
+       64 +    err_pattern=$4                                            
+       65      shift 4
+       66  
+       33 -    output=$("$LAB1" "$@" 2>&1)                               
+       34 -    status=$?                                                 
+       67 +    run "$@"                                                  
+       68      reason=""
+       69  
+       37 -    if [ "$status" -ne "$expected_status" ]; then             
+       38 -        reason="expected exit status $expected_status but saw 
+          -$status"                                                      
+       39 -    elif [ "$expected_error" != "-" ] && ! printf '%s\n' "$out
+          -put" | grep -q "^$expected_error\$"; then                     
+       40 -        reason="expected the program to report \"$expected_err
+          -or\""                                                         
+       41 -    elif [ "$expected_error" = "-" ] && printf '%s\n' "$output
+          -" | grep -q "^Error: "; then                                  
+       42 -        reason="the program reported an error but was expected
+          - to succeed"                                                  
+       43 -    elif [ "$expected_pattern" != "-" ]; then                 
+       44 -        case $expected_pattern in                             
+       45 -            !*)                                               
+       46 -                unwanted_pattern=${expected_pattern#!}        
+       47 -                                                              
+       48 -                if printf '%s\n' "$output" | grep -q "$unwante
+          -d_pattern"; then                                              
+       49 -                    reason="expected the output not to contain
+          - \"$unwanted_pattern\""                                       
+       50 -                fi                                            
+       51 -                ;;                                            
+       52 -            *)                                                
+       53 -                if ! printf '%s\n' "$output" | grep -q "$expec
+          -ted_pattern"; then                                            
+       54 -                    reason="expected the output to contain \"$
+          -expected_pattern\""                                           
+       55 -                fi                                            
+       56 -                ;;                                            
+       57 -        esac                                                  
+       70 +    if [ "$STATUS" -ne "$expected_status" ]; then             
+       71 +        reason="expected exit status $expected_status but saw 
+          +$STATUS"                                                      
+       72 +    elif [ "$STATUS" -ne 0 ] && ! grep -q "^Error: $STATUS\$" 
+          +"$TMP/err"; then                                              
+       73 +        reason="expected \"Error: $STATUS\" on stderr"        
+       74 +    elif [ "$STATUS" -eq 0 ] && grep -q "^Error: " "$TMP/err";
+          + then                                                         
+       75 +        reason="reported an error but was expected to succeed"
+       76 +    elif ! matches "$TMP/out" "$out_pattern"; then            
+       77 +        reason="stdout did not satisfy \"$out_pattern\""      
+       78 +    elif ! matches "$TMP/err" "$err_pattern"; then            
+       79 +        reason="stderr did not satisfy \"$err_pattern\""      
+       80      fi
+       81  
+       60 -    if [ -z "$reason" ]; then                                 
+       61 -        PASSES=$((PASSES + 1))                                
+       62 -        printf 'PASS  %s\n' "$description"                    
+       63 -    else                                                      
+       64 -        FAILURES=$((FAILURES + 1))                            
+       65 -        printf 'FAIL  %s (%s)\n' "$description" "$reason"     
+       82 +    record "$description" "$reason"                           
+       83 +}                                                             
+       84 +                                                              
+       85 +# check_output <description> <expected output file> <arguments
+          +...> - the run                                                
+       86 +# must succeed and its stdout must match the expected file exa
+          +ctly                                                          
+       87 +check_output() {                                              
+       88 +    description=$1                                            
+       89 +    expected=$2                                               
+       90 +    shift 2                                                   
+       91 +                                                              
+       92 +    run "$@"                                                  
+       93 +    reason=""                                                 
+       94 +                                                              
+       95 +    if [ "$STATUS" -ne 0 ]; then                              
+       96 +        reason="expected exit status 0 but saw $STATUS"       
+       97 +    elif ! diff "$DIR/$expected" "$TMP/out" > "$TMP/diff"; the
+          +n                                                             
+       98 +        reason="stdout differs from $expected: $(head -4 "$TMP
+          +/diff" | tr '\n' ' ')"                                        
+       99      fi
+      100 +                                                              
+      101 +    record "$description" "$reason"                           
+      102  }
+      103  
+       69 -cargo build || exit 1                                         
+      104 +# Build and unit tests: the spec requires a build with no warn
+          +ings.                                                         
+      105 +cargo build 2> "$TMP/build"                                   
+      106 +build_status=$?                                               
+      107 +cat "$TMP/build"                                              
+      108 +                                                              
+      109 +if [ "$build_status" -ne 0 ]; then                            
+      110 +    exit 1                                                    
+      111 +fi                                                            
+      112 +                                                              
+      113 +if grep -q "^warning" "$TMP/build"; then                      
+      114 +    record "build has no warnings" "cargo build printed a warn
+          +ing"                                                          
+      115 +else                                                          
+      116 +    record "build has no warnings" ""                         
+      117 +fi                                                            
+      118 +                                                              
+      119 +if cargo test -q > "$TMP/unit" 2>&1; then                     
+      120 +    record "unit tests pass" ""                               
+      121 +else                                                          
+      122 +    cat "$TMP/unit"                                           
+      123 +    record "unit tests pass" "cargo test failed"              
+      124 +fi                                                            
+      125 +                                                              
+      126  printf '\n'
+      127  
+      128  # Command line handling: a badly formed command line is error 
+           code 1.
+       73 -check "no arguments prints usage"                1 "Error: 1" 
+          -"^usage: "                                                    
+       74 -check "too many arguments prints usage"          1 "Error: 1" 
+          -"^usage: " hamlet_ii_2_config.txt whinge extra                
+       75 -check "unrecognized optional argument"           1 "Error: 1" 
+          -"^usage: " hamlet_ii_2_config.txt complain                    
+      129 +check "no arguments prints usage"            1 "^usage: .* <sc
+          +ript_file_name> \[whinge\]$" -                                
+      130 +check "too many arguments prints usage"      1 "^usage: " - pa
+          +rtial_hamlet_act_ii_script.txt whinge extra                   
+      131 +check "unrecognized optional argument"       1 "^usage: " - pa
+          +rtial_hamlet_act_ii_script.txt complain                       
+      132  
+       77 -# Well formed input: the reference play fragment and a second 
+          -play.                                                         
+       78 -check "reference Hamlet fragment"                0 "-" "^King\
+          -.$"            hamlet_ii_2_config.txt                         
+       79 -check "Macbeth fragment, lines out of order"     0 "-" "^A fri
+          -end\.$"        macbeth_ii_1_config.txt                        
+       80 -check "silent character is never announced"      0 "-" "!^Serv
+          -ant\."         macbeth_ii_1_config.txt                        
+       81 -check "blank lines and extra whitespace"         0 "-" "^Guild
+          -enstern\.$"    whitespace_config.txt                          
+      133 +# The provided Hamlet script.  Its expected output covers Scen
+          +e I only and puts                                             
+      134 +# a trailing space after each speaker name, so compare that ma
+          +ny lines of our                                               
+      135 +# output against it while ignoring differences in whitespace. 
+      136 +run partial_hamlet_act_ii_script.txt                          
+      137 +head -n "$(wc -l < "$SAMPLE")" "$TMP/out" > "$TMP/scene1"     
+      138  
+       83 -# Recoverable problems: the program skips what it cannot use a
+          -nd still recites.                                             
+       84 -check "fuzzed configuration and part files"      0 "-" "^Messe
+          -nger\.$"       fuzz_config.txt                                
+       85 -check "fuzzed input warns under whinge"          0 "-" "^WARNI
+          -NG: "          fuzz_config.txt whinge                         
+       86 -check "fuzzed input stays quiet without whinge"  0 "-" "-"    
+          -               fuzz_config.txt                                
+       87 -check "badly formed line numbers are skipped"    0 "-" "^Ghost
+          -\.$"           numeric_config.txt                             
+       88 -check "carriage returns are trimmed"             0 "-" "^Senti
+          -nel\.$"        crlf_config.txt                                
+       89 -check "unreadable part file is skipped"          0 "-" "^King\
+          -.$"            dir_part_config.txt                            
+      139 +if [ "$STATUS" -ne 0 ]; then                                  
+      140 +    record "Hamlet Scene I matches hamlet_act_ii_scene_1.txt" 
+          +"exit status $STATUS"                                         
+      141 +elif ! diff -b "$SAMPLE" "$TMP/scene1" > "$TMP/diff"; then    
+      142 +    record "Hamlet Scene I matches hamlet_act_ii_scene_1.txt" 
+          +"$(head -4 "$TMP/diff" | tr '\n' ' ')"                        
+      143 +else                                                          
+      144 +    record "Hamlet Scene I matches hamlet_act_ii_scene_1.txt" 
+          +""                                                            
+      145 +fi                                                            
+      146  
+       91 -# Unrecoverable problems: script generation failure is error c
+          -ode 2.                                                        
+       92 -check "missing configuration file"               1 "Error: 2" 
+          -"^ERROR: "     no_such_config.txt                             
+       93 -check "configuration with no character lines"    1 "Error: 2" 
+          -"^ERROR: "     title_only_config.txt                          
+       94 -check "configuration with no readable parts"     1 "Error: 2" 
+          -"^ERROR: "     no_valid_parts_config.txt                      
+      147 +DIR=$ROOT/test_inputs                                         
+      148 +check_output "full Hamlet script matches expected output" expe
+          +cted_hamlet.txt ../partial_hamlet_act_ii_script.txt           
+      149 +DIR=$ROOT                                                     
+      150  
+      151 +check "Hamlet whinges about line 0 on stderr"  0 "!WARNING" "^
+          +WARNING: Line 0 is missing$" partial_hamlet_act_ii_script.txt 
+          +whinge                                                        
+      152 +check "Hamlet is silent on stderr by default"  0 "^\[Exit King
+          +\.\]$" "!." partial_hamlet_act_ii_script.txt                  
+      153 +                                                              
+      154 +# Hand-made inputs, run from inside test_inputs/.             
+      155 +DIR=$ROOT/test_inputs                                         
+      156 +                                                              
+      157 +# Entrances and exits across fragments and scenes.            
+      158 +check_output "characters exit, re-enter, and titles start scen
+          +es" expected_recurring.txt recurring_script.txt               
+      159 +check_output "same cast twice in a row stays on stage"        
+          +    expected_repeat.txt    repeat_script.txt                  
+      160 +                                                              
+      161 +# Well formed input from a second play.                       
+      162 +check "Macbeth: lines out of order are sorted"  0 "^A friend\.
+          +$"         "!." macbeth_script.txt                            
+      163 +check "Macbeth: silent character enters"        0 "^\[Enter Se
+          +rvant\.\]$" -   macbeth_script.txt                            
+      164 +check "Macbeth: silent character never speaks"  0 "!^Servant\.
+          +$"         -   macbeth_script.txt                             
+      165 +                                                              
+      166 +# Formatting tolerance.                                       
+      167 +check "blank lines, tabs and extra spaces"      0 "^Spaced Out
+          + Title$"   "!." whitespace_script.txt                         
+      168 +check "CRLF script and configuration"           0 "^Sentinel\.
+          +$"         "!." crlf_script.txt                               
+      169 +check "carriage returns are trimmed"            0 "!$CR"      
+          +           -    crlf_script.txt                               
+      170 +check "numeric edge cases are recited"          0 "^The larges
+          +t usize value" "!." numeric_script.txt                        
+      171 +check "numeric edge cases whinge"               0 "!WARNING" "
+          +^WARNING: Lines 13 to 18446744073709551614 are missing$" numer
+          +ic_script.txt whinge                                          
+      172 +                                                              
+      173 +# Recoverable problems: skipped (with a complaint under whinge
+          +), still recited.                                             
+      174 +check "bare [scene] line is skipped"            0 "^A Titled S
+          +cene$"     "!." bare_scene_script.txt                         
+      175 +check "bare [scene] line whinges"               0 "!WARNING" "
+          +no scene title" bare_scene_script.txt whinge                  
+      176 +check "extra tokens after a config file"        0 "^Extra Toke
+          +ns$"       "!." extra_tokens_script.txt                       
+      177 +check "extra tokens whinge"                     0 "!WARNING" "
+          +^WARNING: Ignoring extra tokens" extra_tokens_script.txt whing
+          +e                                                             
+      178 +check "second [scene] title replaces the first" 0 "^Surviving 
+          +Title$"    -    double_title_script.txt                       
+      179 +check "replaced [scene] title is never printed" 0 "!Overridden
+          + Title"    -    double_title_script.txt                       
+      180 +check "fuzzed configuration still recites"      0 "^Messenger\
+          +.$"        "!." fuzz_script.txt                               
+      181 +check "fuzzed configuration whinges"            0 "!WARNING" "
+          +^WARNING: Configuration line \"Lonely\"" fuzz_script.txt whing
+          +e                                                             
+      182 +check "duplicate line whinges"                  0 "!WARNING" "
+          +^WARNING: Line 1 is duplicated$" gaps_script.txt whinge       
+      183 +check "missing lines whinge as a range"         0 "!WARNING" "
+          +^WARNING: Lines 2 to 4 are missing$" gaps_script.txt whinge   
+      184 +check "starting at line 0 is not a gap"         0 -          "
+          +!Line 0" gaps_script.txt whinge                               
+      185 +                                                              
+      186 +# Unrecoverable problems: script generation failure is error c
+          +ode 2, and                                                    
+      187 +# nothing is recited (stdout stays empty).                    
+      188 +check "missing script file"                     2 "!." "^ERROR
+          +: Failed to read script file"   no_such_script.txt            
+      189 +check "empty script file"                       2 "!." "^ERROR
+          +: Script file .* is empty"     empty_script.txt               
+      190 +check "script of blank lines"                   2 "!." "^ERROR
+          +: Script file .* is empty"     blank_script.txt               
+      191 +check "script with no configuration files"     2 "!." "does no
+          +t name any configuration"     titles_only_script.txt          
+      192 +check "configuration before any [scene] title"  2 "!." "must g
+          +ive a \[scene\] title"         untitled_script.txt            
+      193 +check "missing configuration file"              2 "!." "^ERROR
+          +: Failed to read configuration file" missing_config_script.txt
+      194 +check "[Scene] is not the [scene] directive"    2 "!." "^ERROR
+          +: Failed to read configuration file \[Scene\]" wrong_case_scri
+          +pt.txt                                                        
+      195 +check "empty configuration file"                2 "!." "^ERROR
+          +: Configuration file .* cannot be empty" empty_config_script.t
+          +xt                                                            
+      196 +check "missing part file"                       2 "!." "^ERROR
+          +: Failed to read part file no_such_part.txt" missing_part_scri
+          +pt.txt                                                        
+      197 +check "part file is a directory"                2 "!." "^ERROR
+          +: Failed to read part file a_directory" dir_part_script.txt   
+      198 +check "part file is not UTF-8"                  2 "!." "^ERROR
+          +: Failed to read part file binary.txt" binary_part_script.txt 
+      199 +                                                              
+      200  printf '\n%d passed, %d failed\n' "$PASSES" "$FAILURES"
+      201  [ "$FAILURES" -eq 0 ]
+
+⏺ The full-Hamlet case needs a fix since the script expects to run from the
+  package root, not test_inputs/. I'll adjust the expected-file paths to be
+  relative to the root instead.
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/lab2" && python3 -I -
+      <<'EOF'
+      p = "run_tests.sh"…)
+  ⎿  148:check_output "full Hamlet script matches expected output" test_inp
+     uts/expected_hamlet.txt partial_hamlet_act_ii_script.txt
+     156:check_output "characters exit, re-enter, and titles start scenes"
+     … +3 lines (ctrl+o to expand)
+  ⎿  Updated run_tests.sh (+6 -8)
+      83  }
+      84  
+      85  # check_output <description> <expected output file> <arguments.
+          ..> - the run
+      86 -# must succeed and its stdout must match the expected file exac
+         -tly                                                            
+      86 +# must succeed and its stdout must match the expected file (a p
+         +ath relative to                                                
+      87 +# the package directory) exactly                               
+      88  check_output() {
+      89      description=$1
+      90      expected=$2
+     ...
+       95  
+       96      if [ "$STATUS" -ne 0 ]; then
+       97          reason="expected exit status 0 but saw $STATUS"
+       97 -    elif ! diff "$DIR/$expected" "$TMP/out" > "$TMP/diff"; the
+          -n                                                             
+       98 +    elif ! diff "$ROOT/$expected" "$TMP/out" > "$TMP/diff"; th
+          +en                                                            
+       99          reason="stdout differs from $expected: $(head -4 "$TMP
+           /diff" | tr '\n' ' ')"
+      100      fi
+      101  
+     ...
+      145      record "Hamlet Scene I matches hamlet_act_ii_scene_1.txt" 
+           ""
+      146  fi
+      147  
+      147 -DIR=$ROOT/test_inputs                                         
+      148 -check_output "full Hamlet script matches expected output" expe
+          -cted_hamlet.txt ../partial_hamlet_act_ii_script.txt           
+      149 -DIR=$ROOT                                                     
+      150 -                                                              
+      148 +check_output "full Hamlet script matches expected output" test
+          +_inputs/expected_hamlet.txt partial_hamlet_act_ii_script.txt  
+      149  check "Hamlet whinges about line 0 on stderr"  0 "!WARNING" "^
+           WARNING: Line 0 is missing$" partial_hamlet_act_ii_script.txt 
+           whinge
+      150  check "Hamlet is silent on stderr by default"  0 "^\[Exit King
+           \.\]$" "!." partial_hamlet_act_ii_script.txt
+      151  
+     ...
+      153  DIR=$ROOT/test_inputs
+      154  
+      155  # Entrances and exits across fragments and scenes.
+      158 -check_output "characters exit, re-enter, and titles start scen
+          -es" expected_recurring.txt recurring_script.txt               
+      159 -check_output "same cast twice in a row stays on stage"        
+          -    expected_repeat.txt    repeat_script.txt                  
+      156 +check_output "characters exit, re-enter, and titles start scen
+          +es" test_inputs/expected_recurring.txt recurring_script.txt   
+      157 +check_output "same cast twice in a row stays on stage" test_in
+          +puts/expected_repeat.txt repeat_script.txt                    
+      158  
+      159  # Well formed input from a second play.
+      160  check "Macbeth: lines out of order are sorted"  0 "^A friend\.
+           $"         "!." macbeth_script.txt
+
+⏺ I'm upgrading the fuzzer by replacing the loose property checks from Lab 1
+  with a full behavioral model that predicts exact stdout, exit status, and
+  whinge warning counts for random multi-fragment scripts.
+
+⏺ Write(fuzz_test.py)
+  ⎿  Added 376 lines, removed 226 lines
+        1  #!/usr/bin/env python3
+        2 -# TODO: adapt for Lab 2 (script files with [scene] directives,
+          - entrances/exits, whinge output on stderr).                   
+        3 -"""Randomized fuzzer for CSE 5402 Lab 1.                      
+        2 +"""Randomized fuzzer for CSE 5402 Lab 2.                      
+        3  
+        5 -Generates random configuration files and part files (including
+          - malformed,                                                   
+        6 -adversarial, and pathological content), runs the program on th
+          -em, and checks                                                
+        7 -invariants the lab spec requires:                             
+        4 +Generates random script files, scene fragment configuration fi
+          +les, and part                                                 
+        5 +files (including malformed, adversarial, and pathological cont
+          +ent), runs the                                                
+        6 +program on them, and compares the program against an independe
+          +nt Python model                                               
+        7 +of the behavior the lab spec requires.  The model predicts the
+          + exact standard                                               
+        8 +output, the exit status, and how many whinge warnings should a
+          +ppear.  Checked                                               
+        9 +invariants:                                                   
+       10  
+        9 -  I1  the program never panics / never crashes (exit status mu
+          -st be 0, 1, or 2)                                             
+       10 -  I2  the program always terminates promptly (no hangs / infin
+          -ite loops)                                                    
+       11 -  I3  a successful run prints the title, then well-formed spea
+          -ker blocks                                                    
+       12 -  I4  recited lines appear in nondecreasing line-number order 
+       13 -  I5  a speaker is announced exactly when the speaker changes 
+       14 -  I6  every well-formed numbered line from a readable part fil
+          -e is recited                                                  
+       15 -  I7  running without "whinge" prints no WARNING lines        
+       16 -  I8  the program is deterministic for identical input        
+       11 +  I1  the program never panics or crashes (exit status must be
+          + 0 or 2)                                                      
+       12 +  I2  the program always terminates promptly (no hangs or infi
+          +nite loops)                                                   
+       13 +  I3  a successful run's stdout matches the model exactly: sce
+          +ne titles only                                                
+       14 +      on a scene's first fragment, entrances in first-speaking
+          + order, lines in                                              
+       15 +      line-number order, speaker changes announced, exits in r
+          +everse order                                                  
+       16 +  I4  a failed run reports "Error: 2", prints an ERROR message
+          +, and recites                                                 
+       17 +      nothing on stdout                                       
+       18 +  I5  whinge output goes only to stderr, never stdout; without
+          + whinge, stderr                                               
+       19 +      is empty on success                                     
+       20 +  I6  with whinge, the number of WARNING lines matches the mod
+          +el                                                            
+       21 +  I7  the program is deterministic for identical input        
+       22 +                                                              
+       23 +Before the random cases, the model is also checked against the
+          + provided Hamlet                                              
+       24 +script and the hand-made inputs in test_inputs/, so a model bu
+          +g shows up there.                                             
+       25 +                                                              
+       26 +Usage: python3 fuzz_test.py <path to lab2 binary> [iterations]
+          + [seed]                                                       
+       27  """
+       28  
+       29  import os, random, re, shutil, subprocess, sys, tempfile
+       30  
+       21 -LAB1 = os.path.abspath(sys.argv[1])                           
+       31 +LAB2 = os.path.abspath(sys.argv[1])                           
+       32  ITERATIONS = int(sys.argv[2]) if len(sys.argv) > 2 else 2000
+       33  SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 5402
+       34  
+       25 -NAMES = ["King", "Queen", "Hamlet", "Ghost", "A", "Ros_Guil", 
+          -"Ünïcødé", "x" * 200, "123", "-", "..", "a.b"]                
+       35 +ROOT = os.path.dirname(os.path.abspath(__file__))             
+       36 +USIZE_MAX = 2**64 - 1                                         
+       37 +SCENE_DIRECTIVE = "[scene]"                                   
+       38  
+       27 -# Snippets of line text, each paired with the line number it s
+          -hould parse as,                                               
+       28 -# or None when the line is expected to be skipped as badly for
+          -med.                                                          
+       29 -def gen_part_line(rng, used_numbers):                         
+       30 -    kind = rng.choice([                                       
+       31 -        "good", "good", "good", "good", "good",               
+       32 -        "blank", "ws_only", "single_token", "bad_number", "neg
+          -ative",                                                       
+       33 -        "huge", "float", "plus", "leading_ws", "tabs", "crlf",
+       34 -        "zero", "usize_max", "overflow", "number_only_ws", "un
+          -icode",                                                       
+       35 -    ])                                                        
+       36 -    if kind == "good":                                        
+       37 -        n = rng.randint(0, 10_000)                            
+       38 -        text = rng.choice(["To be or not to be", "Ay, my lord.
+          -", "What ho!",                                                
+       39 -                           "   spaced   out   ", "a", "x" * 30
+          -0, "Ünïcødé — ✓"])                                            
+       40 -        sep = rng.choice([" ", "\t", "   ", " \t "])          
+       41 -        return (f"{n}{sep}{text}", n, text.strip())           
+       42 -    if kind == "blank":                                       
+       43 -        return ("", None, None)                               
+       44 -    if kind == "ws_only":                                     
+       45 -        return (rng.choice(["   ", "\t", " \t  "]), None, None
+          -)                                                             
+       46 -    if kind == "single_token":                                
+       47 -        return (rng.choice(["42", "hello", "x" * 100]), None, 
+          -None)                                                         
+       48 -    if kind == "bad_number":                                  
+       49 -        return ("abc rest of line", None, None)               
+       50 -    if kind == "negative":                                    
+       51 -        return ("-5 negative line number", None, None)        
+       52 -    if kind == "huge":                                        
+       53 -        return ("9" * 40 + " too big for usize", None, None)  
+       54 -    if kind == "float":                                       
+       55 -        return ("3.14 not an integer", None, None)            
+       56 -    if kind == "plus":                                        
+       57 -        return ("+7 leading plus sign", 7, "leading plus sign"
+          -)                                                             
+       58 -    if kind == "leading_ws":                                  
+       59 -        # grab_trimmed_file_lines trims, so this is a well for
+          -med line                                                      
+       60 -        n = rng.randint(0, 999)                               
+       61 -        return (f"    {n}   indented line   ", n, "indented li
+          -ne")                                                          
+       62 -    if kind == "tabs":                                        
+       63 -        n = rng.randint(0, 999)                               
+       64 -        return (f"{n}\t\ttab separated", n, "tab separated")  
+       65 -    if kind == "crlf":                                        
+       66 -        n = rng.randint(0, 999)                               
+       67 -        return (f"{n} carriage return line\r", n, "carriage re
+          -turn line")                                                   
+       68 -    if kind == "zero":                                        
+       69 -        return ("0 zeroth line", 0, "zeroth line")            
+       70 -    if kind == "usize_max":                                   
+       71 -        n = 2**64 - 1                                         
+       72 -        return (f"{n} last line ever", n, "last line ever")   
+       73 -    if kind == "overflow":                                    
+       74 -        return (f"{2**64} overflows usize", None, None)       
+       75 -    if kind == "number_only_ws":                              
+       76 -        # "5   " trims to "5" -> single token -> skipped      
+       77 -        return ("5    ", None, None)                          
+       78 -    if kind == "unicode":                                     
+       79 -        n = rng.randint(0, 999)                               
+       80 -        return (f"{n} Ünïcødé ✓ — ok", n, "Ünïcødé ✓ — ok")   
+       81 -    raise AssertionError(kind)                                
+       39 +# Rust's trim() and split_whitespace() use the Unicode White_S
+          +pace property,                                                
+       40 +# which differs slightly from Python's str.isspace(), so spell
+          + it out.                                                      
+       41 +RUST_WS = ("\t\n\x0b\x0c\r \x85\xa0 "                         
+       42 +           + "".join(chr(c) for c in range(0x2000, 0x200B))   
+       43 +           + "    　")                                        
+       44 +WS_RUN = re.compile("[" + re.escape(RUST_WS) + "]+")          
+       45  
+       46  
+       84 -def gen_case(rng, workdir):                                   
+       85 -    """Build one random test case; return (config_name, expect
+          -ed_lines or None).                                            
+       47 +# ------------------------------------------------------------
+          +---------------                                               
+       48 +# Model of the program                                        
+       49 +# ------------------------------------------------------------
+          +---------------                                               
+       50  
+       87 -    expected_lines is the sorted list of (number, speaker, tex
+          -t) the program                                                
+       88 -    should recite, or None when we expect script generation to
+          - fail.                                                        
+       89 -    """                                                       
+       90 -    n_chars = rng.randint(0, 5)                               
+       91 -    config_lines = []                                         
+       92 -    expected = []                                             
+       93 -    readable_parts = 0                                        
+       94 -    title = rng.choice(["Hamlet, ACT II, Scene II", "A Play", 
+          -"   Title With   Spaces   ",                                  
+       95 -                        "Ünïcødé Title ✓", "x" * 300, "one"]) 
+       96 -    config_lines.append(title)                                
+       51 +class Failed(Exception):                                      
+       52 +    """Script generation fails (the program should exit with e
+          +rror code 2)."""                                              
+       53  
+       98 -    for i in range(n_chars):                                  
+       99 -        name = rng.choice(NAMES)                              
+      100 -        flavor = rng.choice(["ok", "ok", "ok", "ok", "missing"
+          -, "extra_tokens",                                             
+      101 -                             "one_token", "blank", "ws", "dir"
+          -, "empty_file", "binary"])                                    
+      102 -        fname = f"part{i}.txt"                                
+       54  
+      104 -        if flavor == "blank":                                 
+      105 -            config_lines.append("")                           
+      106 -            continue                                          
+      107 -        if flavor == "ws":                                    
+      108 -            config_lines.append(rng.choice(["   ", "\t\t"]))  
+      109 -            continue                                          
+      110 -        if flavor == "one_token":                             
+      111 -            config_lines.append(name)                         
+      112 -            continue                                          
+      113 -        if flavor == "missing":                               
+      114 -            config_lines.append(f"{name} no_such_file_{i}.txt"
+          -)                                                             
+      115 -            continue                                          
+      116 -        if flavor == "dir":                                   
+      117 -            os.mkdir(os.path.join(workdir, f"dir{i}"))        
+      118 -            config_lines.append(f"{name} dir{i}")             
+      119 -            continue                                          
+      120 -        if flavor == "binary":                                
+      121 -            with open(os.path.join(workdir, fname), "wb") as f
+          -:                                                             
+      122 -                f.write(b"\xff\xfe\x00\x01 invalid utf-8\n")  
+      123 -            config_lines.append(f"{name} {fname}")            
+      124 -            continue                                          
+       55 +def trim(s):                                                  
+       56 +    return s.strip(RUST_WS)                                   
+       57  
+      126 -        # ok / extra_tokens / empty_file all have a readable p
+          -art file                                                      
+      127 -        body = []                                             
+      128 -        if flavor != "empty_file":                            
+      129 -            for _ in range(rng.randint(0, 8)):                
+      130 -                raw, num, text = gen_part_line(rng, None)     
+      131 -                body.append(raw)                              
+      132 -                if num is not None:                           
+      133 -                    expected.append((num, name, text))        
+       58  
+      135 -        newline = rng.choice(["\n", "\r\n"])                  
+      136 -        trailing = rng.choice(["", newline])                  
+      137 -        with open(os.path.join(workdir, fname), "w", encoding=
+          -"utf-8") as f:                                                
+      138 -            f.write(newline.join(body) + trailing)            
+      139 -        readable_parts += 1                                   
+       59 +def split_ws(s):                                              
+       60 +    return [t for t in WS_RUN.split(s) if t]                  
+       61  
+      141 -        if flavor == "extra_tokens":                          
+      142 -            config_lines.append(f"{name} {fname} extra ignored
+          - tokens")                                                     
+      143 -        else:                                                 
+      144 -            sep = rng.choice([" ", "\t", "   "])              
+      145 -            config_lines.append(f"{name}{sep}{fname}")        
+       62  
+      147 -    # sprinkle blank lines through the config                 
+      148 -    for _ in range(rng.randint(0, 3)):                        
+      149 -        config_lines.insert(rng.randint(1, len(config_lines)),
+          - rng.choice(["", "  ", "\t"]))                                
+       63 +def read_lines(path):                                         
+       64 +    """grab_trimmed_file_lines: every line trimmed, or Failed 
+          +if unreadable."""                                             
+       65 +    try:                                                      
+       66 +        with open(path, "rb") as f:                           
+       67 +            data = f.read()                                   
+       68 +        text = data.decode("utf-8")                           
+       69 +    except (OSError, UnicodeDecodeError):                     
+       70 +        raise Failed(path)                                    
+       71 +    lines = text.split("\n")                                  
+       72 +    if lines and lines[-1] == "":                             
+       73 +        lines.pop()   # read_line reports EOF rather than a fi
+          +nal empty line                                                
+       74 +    return [trim(line) for line in lines]                     
+       75  
+      151 -    config_name = "config.txt"                                
+      152 -    newline = rng.choice(["\n", "\r\n"])                      
+      153 -    with open(os.path.join(workdir, config_name), "w", encodin
+          -g="utf-8") as f:                                              
+      154 -        f.write(newline.join(config_lines) + rng.choice(["", n
+          -ewline]))                                                     
+       76  
+      156 -    nonblank = [l for l in config_lines if l.strip()]         
+      157 -    if len(nonblank) < 2 or readable_parts == 0:              
+      158 -        expected = None   # script generation must fail       
+      159 -    else:                                                     
+      160 -        expected.sort()                                       
+      161 -    return config_name, expected                              
+       77 +def parse_usize(token):                                       
+       78 +    """str::parse::<usize>: an optional '+' then ASCII digits,
+          + within range."""                                             
+       79 +    digits = token[1:] if token.startswith("+") else token    
+       80 +    if not digits or any(c not in "0123456789" for c in digits
+          +):                                                            
+       81 +        return None                                           
+       82 +    value = int(digits)                                       
+       83 +    return value if value <= USIZE_MAX else None              
+       84  
+       85  
+      164 -def check_output(out, expected, whinge):                      
+      165 -    """Verify invariants I3-I7 against the recited script.""" 
+      166 -    lines = out.split("\n")                                   
+      167 -    if lines and lines[-1] == "":                             
+      168 -        lines.pop()                                           
+      169 -    # Drop WARNING lines, which may be interleaved before the 
+          -script is printed.                                            
+      170 -    warnings = [l for l in lines if l.startswith("WARNING: ")]
+      171 -    if warnings and not whinge:                               
+      172 -        return "printed WARNING lines without whinge mode"    
+          -# I7                                                          
+      173 -    body = [l for l in lines if not l.startswith("WARNING: ")]
+       86 +class Model:                                                  
+       87 +    def __init__(self, workdir):                              
+       88 +        self.workdir = workdir                                
+       89 +        self.out = []                                         
+       90 +        self.warnings = 0                                     
+       91  
+      175 -    if not body:                                              
+      176 -        return "printed no output at all"                     
+      177 -    body = body[1:]   # I3: first line is the title           
+       92 +    def path(self, name):                                     
+       93 +        return os.path.join(self.workdir, name)               
+       94  
+      179 -    recited = []                                              
+      180 -    speaker = None                                            
+      181 -    i = 0                                                     
+      182 -    while i < len(body):                                      
+      183 -        if body[i] == "" and i + 1 < len(body) and body[i + 1]
+          -.endswith("."):                                               
+      184 -            candidate = body[i + 1][:-1]                      
+      185 -            # A speaker announcement is a blank line plus "Nam
+          -e." where Name is                                             
+      186 -            # one of the speakers we still expect to hear from
+          -.                                                             
+      187 -            if expected is not None and any(c == candidate for
+          - _, c, _ in expected):                                        
+      188 -                if candidate == speaker:                      
+      189 -                    return f"re-announced speaker {candidate!r
+          -} without a change"   # I5                                    
+      190 -                speaker = candidate                           
+      191 -                i += 2                                        
+       95 +    def load_player(self, name, part_file):                   
+       96 +        lines = []                                            
+       97 +        for line in read_lines(self.path(part_file)):         
+       98 +            if not line:                                      
+       99                  continue
+      193 -        recited.append((speaker, body[i]))                    
+      194 -        i += 1                                                
+      100 +            match = re.search("[" + re.escape(RUST_WS) + "]", 
+          +line)                                                         
+      101 +            if not match:                                     
+      102 +                self.warnings += 1   # only one token         
+      103 +                continue                                      
+      104 +            number = parse_usize(line[:match.start()])        
+      105 +            if number is None:                                
+      106 +                self.warnings += 1   # first token is not a us
+          +ize                                                           
+      107 +                continue                                      
+      108 +            lines.append((number, trim(line[match.end():])))  
+      109 +        lines.sort()                                          
+      110 +        return {"name": name, "lines": lines, "index": 0}     
+      111  
+      196 -    if expected is None:                                      
+      197 -        return None                                           
+      198 -    exp = [(c, t) for _, c, t in expected]                    
+      199 -    if recited != exp:                                        
+      200 -        return f"recited {recited!r} but expected {exp!r}"   #
+          - I4/I6                                                        
+      112 +    def load_fragment(self, config_file, title):              
+      113 +        lines = [line for line in read_lines(self.path(config_
+          +file)) if line]                                               
+      114 +        if not lines:                                         
+      115 +            raise Failed(config_file)                         
+      116 +        players = []                                          
+      117 +        for line in lines:                                    
+      118 +            words = split_ws(line)                            
+      119 +            if len(words) != 2:                               
+      120 +                self.warnings += 1                            
+      121 +            if len(words) >= 2:                               
+      122 +                players.append(self.load_player(words[0], word
+          +s[1]))                                                        
+      123 +        # silent players first, then by first line number; Pyt
+          +hon's sort is                                                 
+      124 +        # stable, like Rust's Vec::sort                       
+      125 +        players.sort(key=lambda p: (1, p["lines"][0][0]) if p[
+          +"lines"] else (0,))                                           
+      126 +        return {"title": title, "players": players}           
+      127 +                                                              
+      128 +    def prepare(self, script_file):                           
+      129 +        lines = [line for line in read_lines(self.path(script_
+          +file)) if line]                                               
+      130 +        if not lines:                                         
+      131 +            raise Failed(script_file)                         
+      132 +        config = []                                           
+      133 +        for line in lines:                                    
+      134 +            words = split_ws(line)                            
+      135 +            if words == [SCENE_DIRECTIVE]:                    
+      136 +                self.warnings += 1                            
+      137 +            elif words[0] == SCENE_DIRECTIVE:                 
+      138 +                config.append((True, " ".join(words[1:])))    
+      139 +            else:                                             
+      140 +                if len(words) > 1:                            
+      141 +                    self.warnings += 1                        
+      142 +                config.append((False, words[0]))              
+      143 +        fragments, title = [], ""                             
+      144 +        for is_new_scene, text in config:                     
+      145 +            if is_new_scene:                                  
+      146 +                title = text                                  
+      147 +            else:                                             
+      148 +                fragments.append(self.load_fragment(text, titl
+          +e))                                                           
+      149 +                title = ""                                    
+      150 +        if not fragments or fragments[0]["title"] == "":      
+      151 +            raise Failed(script_file)                         
+      152 +        return fragments                                      
+      153 +                                                              
+      154 +    def recite_fragment(self, fragment):                      
+      155 +        players = fragment["players"]                         
+      156 +        expected, recent = 0, None                            
+      157 +        while True:                                           
+      158 +            # Ties on a line number go to the player sorted ea
+          +rlier in the                                                  
+      159 +            # fragment, matching recite's min() over (line, in
+          +dex) tuples.                                                  
+      160 +            candidates = [(p["lines"][p["index"]][0], i)      
+      161 +                          for i, p in enumerate(players) if p[
+          +"index"] < len(p["lines"])]                                   
+      162 +            if not candidates:                                
+      163 +                return                                        
+      164 +            line, i = min(candidates)                         
+      165 +            if line != expected:                              
+      166 +                self.warnings += 1   # missing range or duplic
+          +ated line                                                     
+      167 +            player = players[i]                               
+      168 +            if player["name"] != recent:                      
+      169 +                self.out += ["", player["name"] + "."]        
+      170 +                recent = player["name"]                       
+      171 +            self.out.append(player["lines"][player["index"]][1
+          +])                                                            
+      172 +            player["index"] += 1                              
+      173 +            expected = min(line + 1, USIZE_MAX)               
+      174 +                                                              
+      175 +    def recite(self, fragments):                              
+      176 +        for i, fragment in enumerate(fragments):              
+      177 +            previous = {p["name"] for p in fragments[i - 1]["p
+          +layers"]} if i > 0 else set()                                 
+      178 +            entering = [p for p in fragment["players"] if p["n
+          +ame"] not in previous]                                        
+      179 +            if trim(fragment["title"]):                       
+      180 +                if i > 0:                                     
+      181 +                    self.out.append("")                       
+      182 +                self.out.append(fragment["title"])            
+      183 +                if entering:                                  
+      184 +                    self.out.append("")                       
+      185 +            self.out += ["[Enter %s.]" % p["name"] for p in en
+          +tering]                                                       
+      186 +                                                              
+      187 +            self.recite_fragment(fragment)                    
+      188 +                                                              
+      189 +            following = ({p["name"] for p in fragments[i + 1][
+          +"players"]}                                                   
+      190 +                         if i + 1 < len(fragments) else set())
+      191 +            exiting = [p for p in reversed(fragment["players"]
+          +) if p["name"] not in following]                              
+      192 +            if exiting:                                       
+      193 +                self.out.append("")                           
+      194 +            self.out += ["[Exit %s.]" % p["name"] for p in exi
+          +ting]                                                         
+      195 +                                                              
+      196 +                                                              
+      197 +def predict(workdir, script_file):                            
+      198 +    """Return (expected stdout or None on failure, expected wa
+          +rning count)."""                                              
+      199 +    model = Model(workdir)                                    
+      200 +    try:                                                      
+      201 +        fragments = model.prepare(script_file)                
+      202 +    except Failed:                                            
+      203 +        return None, None                                     
+      204 +    model.recite(fragments)                                   
+      205 +    return "".join(line + "\n" for line in model.out), model.w
+          +arnings                                                       
+      206 +                                                              
+      207 +                                                              
+      208 +# ------------------------------------------------------------
+          +---------------                                               
+      209 +# Running and checking the program                            
+      210 +# ------------------------------------------------------------
+          +---------------                                               
+      211 +                                                              
+      212 +def run(workdir, script_file, whinge):                        
+      213 +    argv = [LAB2, script_file] + (["whinge"] if whinge else []
+          +)                                                             
+      214 +    return subprocess.run(argv, cwd=workdir, capture_output=Tr
+          +ue, timeout=10)                                               
+      215 +                                                              
+      216 +                                                              
+      217 +def check(workdir, script_file, whinge):                      
+      218 +    """Return None if the program agrees with the model, else 
+          +a description."""                                             
+      219 +    expected_out, expected_warnings = predict(workdir, script_
+          +file)                                                         
+      220 +    try:                                                      
+      221 +        p = run(workdir, script_file, whinge)                 
+      222 +    except subprocess.TimeoutExpired:                         
+      223 +        return "TIMEOUT (I2)"                                 
+      224 +    out = p.stdout.decode("utf-8", "replace")                 
+      225 +    err = p.stderr.decode("utf-8", "replace")                 
+      226 +    err_lines = err.splitlines()                              
+      227 +    warnings = [l for l in err_lines if l.startswith("WARNING:
+          + ")]                                                          
+      228 +                                                              
+      229 +    if p.returncode not in (0, 2):                            
+      230 +        return "bad exit status %d (I1)" % p.returncode       
+      231 +    if "WARNING" in out:                                      
+      232 +        return "WARNING printed on stdout (I5)"               
+      233 +    if not whinge and warnings:                               
+      234 +        return "WARNING printed without whinge mode (I5)"     
+      235 +                                                              
+      236 +    if expected_out is None:                                  
+      237 +        if p.returncode != 2 or "Error: 2" not in err_lines:  
+      238 +            return "expected script generation to fail with Er
+          +ror: 2, got status %d (I4)" % p.returncode                    
+      239 +        if not any(l.startswith("ERROR: ") for l in err_lines)
+          +:                                                             
+      240 +            return "failed without an ERROR message (I4)"     
+      241 +        if out:                                               
+      242 +            return "failed but still printed to stdout (I4)"  
+      243 +    else:                                                     
+      244 +        if p.returncode != 0:                                 
+      245 +            return "expected success, got status %d (I1)" % p.
+          +returncode                                                    
+      246 +        if out != expected_out:                               
+      247 +            return "stdout differs from the model (I3)\n--- ex
+          +pected:\n%s\n--- actual:\n%s" % (                             
+      248 +                expected_out[:1500], out[:1500])              
+      249 +        if not whinge and err:                                
+      250 +            return "stderr not empty on a quiet successful run
+          + (I5)"                                                        
+      251 +        if whinge and len(warnings) != expected_warnings:     
+      252 +            return "expected %d WARNING lines, saw %d (I6)" % 
+          +(expected_warnings, len(warnings))                            
+      253 +        if len(warnings) != len(err_lines):                   
+      254 +            return "unexpected non-WARNING stderr on success: 
+          +%r" % err[:300]                                               
+      255 +                                                              
+      256 +    q = run(workdir, script_file, whinge)                     
+      257 +    if q.stdout != p.stdout or q.stderr != p.stderr or q.retur
+          +ncode != p.returncode:                                        
+      258 +        return "nondeterministic output (I7)"                 
+      259      return None
+      260  
+      261  
+      204 -def main():                                                   
+      205 -    rng = random.Random(SEED)                                 
+      206 -    failures = []                                             
+      207 -    for it in range(ITERATIONS):                              
+      208 -        workdir = tempfile.mkdtemp(prefix="lab1fuzz")         
+      209 -        try:                                                  
+      210 -            case_rng = random.Random(rng.randrange(2**63))    
+      211 -            config, expected = gen_case(case_rng, workdir)    
+      212 -            whinge = case_rng.random() < 0.5                  
+      213 -            argv = [LAB1, config] + (["whinge"] if whinge else
+          - [])                                                          
+      214 -            try:                                              
+      215 -                p = subprocess.run(argv, cwd=workdir, capture_
+          -output=True,                                                  
+      216 -                                   text=True, timeout=10)     
+      217 -            except subprocess.TimeoutExpired:                 
+      218 -                failures.append((workdir, "TIMEOUT (I2)", ""))
+          -   # I2                                                       
+      219 -                workdir = None                                
+      220 -                continue                                      
+      262 +# ------------------------------------------------------------
+          +---------------                                               
+      263 +# Random input generation                                     
+      264 +# ------------------------------------------------------------
+          +---------------                                               
+      265  
+      222 -            if p.returncode not in (0, 1):                    
+      223 -                failures.append((workdir, f"bad exit status {p
+          -.returncode} (I1)",                                           
+      224 -                                 p.stdout + p.stderr))        
+      225 -                workdir = None                                
+      226 -                continue                                      
+      266 +NAMES = ["King", "Queen", "Hamlet", "Ghost", "A", "Ros_Guil", 
+          +"Ünïcødé",                                                    
+      267 +         "x" * 60, "123", "-", "..", "a.b"]                   
+      268 +TEXTS = ["To be or not to be", "Ay, my lord.", "What ho!", "  
+          + spaced   out   ",                                            
+      269 +         "a", "x" * 300, "Ünïcødé — ✓", "[scene] not a directi
+          +ve here"]                                                     
+      270 +TITLE_WORDS = ["Hamlet", "ACT", "II", "Scene", "I", "A", "room
+          +", "Ünïcødé", "✓",                                            
+      271 +               "[scene]", "x" * 80]                           
+      272  
+      228 -            # main returns Result<(), u8>, so the lab's error 
+          -code shows up in                                              
+      229 -            # the "Error: N" line Rust prints on stderr, not i
+          -n the exit status.                                            
+      230 -            reported = re.findall(r"^Error: (\d+)$", p.stderr,
+          - re.M)                                                        
+      231 -            want_ok = expected is not None                    
+      232 -            if want_ok and (p.returncode != 0 or reported):   
+      233 -                failures.append((workdir, f"expected success, 
+          -got status {p.returncode} {reported}",                        
+      234 -                                 p.stdout + p.stderr))        
+      235 -                workdir = None                                
+      236 -                continue                                      
+      237 -            if not want_ok and reported != ["2"]:             
+      238 -                failures.append((workdir, f"expected script-ge
+          -n error code 2, got {reported!r} (status {p.returncode})",    
+      239 -                                 p.stdout + p.stderr))        
+      240 -                workdir = None                                
+      241 -                continue                                      
+      273  
+      243 -            if want_ok:                                       
+      244 -                problem = check_output(p.stdout, expected, whi
+          -nge)                                                          
+      245 -                if problem:                                   
+      246 -                    failures.append((workdir, problem, p.stdou
+          -t))                                                           
+      247 -                    workdir = None                            
+      248 -                    continue                                  
+      274 +def gen_part_line(rng):                                       
+      275 +    kind = rng.choice(["good"] * 6 + [                        
+      276 +        "blank", "ws_only", "single_token", "bad_number", "neg
+          +ative", "huge",                                               
+      277 +        "float", "plus", "lone_plus", "leading_ws", "tabs", "z
+          +ero", "usize_max",                                            
+      278 +        "overflow", "number_only_ws", "unicode", "fullwidth_di
+          +git"])                                                        
+      279 +    n = rng.randint(0, 40)                                    
+      280 +    if kind == "good":                                        
+      281 +        sep = rng.choice([" ", "\t", "   ", " \t "])          
+      282 +        return f"{n}{sep}{rng.choice(TEXTS)}"                 
+      283 +    return {                                                  
+      284 +        "blank": "",                                          
+      285 +        "ws_only": rng.choice(["   ", "\t", " \t  "]),        
+      286 +        "single_token": rng.choice(["42", "hello", "x" * 100])
+          +,                                                             
+      287 +        "bad_number": "abc rest of line",                     
+      288 +        "negative": "-5 negative line number",                
+      289 +        "huge": "9" * 40 + " too big for usize",              
+      290 +        "float": "3.14 not an integer",                       
+      291 +        "plus": f"+{n} leading plus sign",                    
+      292 +        "lone_plus": "+ just a plus sign",                    
+      293 +        "leading_ws": f"    {n}   indented line   ",          
+      294 +        "tabs": f"{n}\t\ttab separated",                      
+      295 +        "zero": "0 zeroth line",                              
+      296 +        "usize_max": f"{USIZE_MAX} last line ever",           
+      297 +        "overflow": f"{USIZE_MAX + 1} overflows usize",       
+      298 +        "number_only_ws": f"{n}    ",                         
+      299 +        "unicode": f"{n} Ünïcødé ✓ — ok",                     
+      300 +        "fullwidth_digit": "７ not an ASCII digit",           
+      301 +    }[kind]                                                   
+      302  
+      250 -            # I8: determinism                                 
+      251 -            q = subprocess.run(argv, cwd=workdir, capture_outp
+          -ut=True, text=True, timeout=10)                               
+      252 -            if q.stdout != p.stdout or q.returncode != p.retur
+          -ncode:                                                        
+      253 -                failures.append((workdir, "nondeterministic ou
+          -tput (I8)", p.stdout))                                        
+      254 -                workdir = None                                
+      255 -                continue                                      
+      256 -        finally:                                              
+      257 -            if workdir:                                       
+      258 -                shutil.rmtree(workdir, ignore_errors=True)    
+      303  
+      260 -    print(f"{ITERATIONS - len(failures)}/{ITERATIONS} cases pa
+          -ssed")                                                        
+      261 -    for wd, why, out in failures[:10]:                        
+      262 -        print(f"\nFAIL: {why}\n  repro dir: {wd}\n  output:\n{
+          -out[:1500]}")                                                 
+      304 +def write_lines(rng, path, lines):                            
+      305 +    newline = rng.choice(["\n", "\n", "\r\n"])                
+      306 +    trailing = rng.choice(["", newline])                      
+      307 +    with open(path, "w", encoding="utf-8", newline="") as f:  
+      308 +        f.write(newline.join(lines) + trailing)               
+      309 +                                                              
+      310 +                                                              
+      311 +def gen_part_file(rng, workdir, index):                       
+      312 +    """Create a part file (usually readable) and return its na
+          +me."""                                                        
+      313 +    flavor = rng.choices(["ok", "empty", "missing", "dir", "bi
+          +nary"],                                                       
+      314 +                         weights=[90, 4, 2, 2, 2])[0]         
+      315 +    name = f"part{index}.txt"                                 
+      316 +    if flavor == "missing":                                   
+      317 +        return f"no_such_part{index}.txt"                     
+      318 +    if flavor == "dir":                                       
+      319 +        os.mkdir(os.path.join(workdir, f"dir{index}"))        
+      320 +        return f"dir{index}"                                  
+      321 +    if flavor == "binary":                                    
+      322 +        with open(os.path.join(workdir, name), "wb") as f:    
+      323 +            f.write(b"1 fine\n\xff\xfe\x00\x01 invalid utf-8\n
+          +")                                                            
+      324 +        return name                                           
+      325 +    count = 0 if flavor == "empty" else rng.randint(0, 6)     
+      326 +    write_lines(rng, os.path.join(workdir, name), [gen_part_li
+          +ne(rng) for _ in range(count)])                               
+      327 +    return name                                               
+      328 +                                                              
+      329 +                                                              
+      330 +def gen_config_file(rng, workdir, index, part_files):         
+      331 +    """Create a scene fragment configuration file and return i
+          +ts name."""                                                   
+      332 +    name = f"config{index}.txt"                               
+      333 +    if rng.random() < 0.03:                                   
+      334 +        return f"no_such_config{index}.txt"                   
+      335 +    lines = []                                                
+      336 +    for _ in range(rng.randint(0, 4)):                        
+      337 +        flavor = rng.choices(["ok", "one_token", "extra_tokens
+          +", "blank"],                                                  
+      338 +                             weights=[85, 5, 5, 5])[0]        
+      339 +        character = rng.choice(NAMES)                         
+      340 +        part = rng.choice(part_files)                         
+      341 +        sep = rng.choice([" ", "\t", "   "])                  
+      342 +        lines.append({                                        
+      343 +            "ok": f"{character}{sep}{part}",                  
+      344 +            "one_token": character,                           
+      345 +            "extra_tokens": f"{character} {part} extra ignored
+          + tokens",                                                     
+      346 +            "blank": rng.choice(["", "  ", "\t"]),            
+      347 +        }[flavor])                                            
+      348 +    write_lines(rng, os.path.join(workdir, name), lines)      
+      349 +    return name                                               
+      350 +                                                              
+      351 +                                                              
+      352 +def gen_title(rng):                                           
+      353 +    words = [rng.choice(TITLE_WORDS) for _ in range(rng.randin
+          +t(1, 5))]                                                     
+      354 +    return "".join(rng.choice([" ", "  ", "\t"]) + w for w in 
+          +words)                                                        
+      355 +                                                              
+      356 +                                                              
+      357 +def gen_case(rng, workdir):                                   
+      358 +    """Build one random script (with its files) and return the
+          + script name."""                                              
+      359 +    part_files = [gen_part_file(rng, workdir, i) for i in rang
+          +e(rng.randint(1, 6))]                                         
+      360 +    config_files = [gen_config_file(rng, workdir, i, part_file
+          +s)                                                            
+      361 +                    for i in range(rng.randint(1, 4))]        
+      362 +    lines = []                                                
+      363 +    if rng.random() < 0.9:                                    
+      364 +        lines.append(SCENE_DIRECTIVE + gen_title(rng))   # usu
+          +ally starts with a title                                      
+      365 +    for _ in range(rng.randint(0, 7)):                        
+      366 +        flavor = rng.choices(["config", "scene", "bare_scene",
+          + "blank", "extra_tokens"],                                    
+      367 +                             weights=[55, 20, 5, 10, 10])[0]  
+      368 +        lines.append({                                        
+      369 +            "config": lambda: rng.choice(config_files),       
+      370 +            "scene": lambda: rng.choice(["", "  "]) + SCENE_DI
+          +RECTIVE + gen_title(rng),                                     
+      371 +            "bare_scene": lambda: SCENE_DIRECTIVE + rng.choice
+          +(["", "   "]),                                                
+      372 +            "blank": lambda: rng.choice(["", "   ", "\t"]),   
+      373 +            "extra_tokens": lambda: rng.choice(config_files) +
+          + " extra tokens",                                             
+      374 +        }[flavor]())                                          
+      375 +    script = "script.txt"                                     
+      376 +    if rng.random() < 0.02:                                   
+      377 +        return "no_such_script.txt"                           
+      378 +    write_lines(rng, os.path.join(workdir, script), lines)    
+      379 +    return script                                             
+      380 +                                                              
+      381 +                                                              
+      382 +# ------------------------------------------------------------
+          +---------------                                               
+      383 +                                                              
+      384 +def main():                                                   
+      385 +    failures = []                                             
+      386 +                                                              
+      387 +    # The model must agree with the program on the hand-checke
+          +d inputs first.                                               
+      388 +    fixed = [(ROOT, "partial_hamlet_act_ii_script.txt")]      
+      389 +    inputs = os.path.join(ROOT, "test_inputs")                
+      390 +    fixed += [(inputs, f) for f in sorted(os.listdir(inputs)) 
+          +if f.endswith("_script.txt")]                                 
+      391 +    for workdir, script in fixed:                             
+      392 +        for whinge in (False, True):                          
+      393 +            problem = check(workdir, script, whinge)          
+      394 +            if problem:                                       
+      395 +                failures.append((os.path.join(workdir, script)
+          +, problem))                                                   
+      396 +                                                              
+      397 +    rng = random.Random(SEED)                                 
+      398 +    for _ in range(ITERATIONS):                               
+      399 +        workdir = tempfile.mkdtemp(prefix="lab2fuzz")         
+      400 +        case_rng = random.Random(rng.randrange(2**63))        
+      401 +        script = gen_case(case_rng, workdir)                  
+      402 +        problem = check(workdir, script, case_rng.random() < 0
+          +.5)                                                           
+      403 +        if problem:                                           
+      404 +            failures.append((workdir, problem))   # keep the d
+          +irectory to reproduce                                         
+      405 +        else:                                                 
+      406 +            shutil.rmtree(workdir, ignore_errors=True)        
+      407 +                                                              
+      408 +    total = 2 * len(fixed) + ITERATIONS                       
+      409 +    print(f"{total - len(failures)}/{total} cases passed "    
+      410 +          f"({2 * len(fixed)} fixed, {ITERATIONS} random, seed
+          + {SEED})")                                                    
+      411 +    for where, why in failures[:10]:                          
+      412 +        print(f"\nFAIL: {why}\n  repro: {where}")             
+      413      return 1 if failures else 0
+      414  
+      415  
+
+⏺ I'll generate expected_hamlet.txt from the program and run the fuzzer, which
+  validates the output against the independently-written model and the Scene I
+  sample.
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/lab2" &&
+      ./target/debug/lab2 partial_hamlet_act_ii_script.txt >
+      test_inputs/expected_hamlet.txt && python3 -…)
+  ⎿  2044/2044 cases passed (44 fixed, 2000 random, seed 5402)
+  ⎿  Created test_inputs/expected_hamlet.txt (+286 -0)
+        1 +Hamlet Prince of Denmark ACT II Scene I A room in Polonius hou
+          +se by William Shakespeare                                     
+        2 +                                                              
+        3 +[Enter Polonius.]                                             
+        4 +[Enter Reynaldo.]                                             
+        5 +                                                              
+        6 +Polonius.                                                     
+        7 +Give him this money and these notes, Reynaldo.                
+        8 +                                                              
+        9 +Reynaldo.                                                     
+       10 +I will, my lord.                                              
+       11 +                                                              
+       12 +Polonius.                                                     
+       13 +You shall do marvellous wisely, good Reynaldo,                
+       14 +Before You visit him, to make inquiry                         
+       15 +Of his behaviour.                                             
+       16 +                                                              
+       17 +Reynaldo.                                                     
+       18 +My lord, I did intend it.                                     
+       19 +                                                              
+       20 +Polonius.                                                     
+       21 +Marry, well said; very well said. Look you, sir,              
+       22 +Enquire me first what Danskers are in Paris;                  
+       23 +And how, and who, what means, and where they keep,            
+       24 +What company, at what expense; and finding,                   
+       25 +By this encompassment and drift of question,                  
+       26 +That they do know my son, come you more nearer                
+       27 +Than your particular demands will touch it:                   
+       28 +Take you, as 'twere, some distant knowledge of him;           
+       29 +As thus, 'I know his father and his friends,                  
+       30 +And in part hi;m;--do you mark this, Reynaldo?                
+       31 +                                                              
+       32 +Reynaldo.                                                     
+       33 +Ay, very well, my lord.                                       
+       34 +                                                              
+       35 +Polonius.                                                     
+       36 +'And in part him;--but,' you may say, 'not well:              
+       37 +But if't be he I mean, he's very wild;                        
+       38 +Addicted so and so;' and there put on him                     
+       39 +What forgeries you please; marry, none so rank                
+       40 +As may dishonour him; take heed of that;                      
+     … 246 more lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+⏺ All 2,044 cases passed on the first run, which makes me want to verify the
+  suite can actually catch bugs rather than just being weak. I'll plant
+  deliberate bugs one at a time in a scratch copy of the crate and confirm the
+  fuzzer and run_tests.sh fail on each.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The fuzzer caught all six planted bugs. Now running the new run_tests.sh
+  against your real code.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ All 41 cases pass. Running the suite once against a planted bug, to confirm it
+  can fail too:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ The suite catches that planted bug in three places. Last, gen_output.sh:
+
+⏺ Write(gen_output.sh)
+  ⎿  Added 52 lines, removed 19 lines
+       1  #!/bin/sh
+       2 -# TODO: adapt for Lab 2 (binary name, script files instead of c
+         -onfig files, new inputs). Lab 1 inputs now live in ../lab1.    
+       2  #
+       4 -# gen_output.sh - regenerate test_output.txt for CSE 5402 Lab 1
+         -.                                                              
+       3 +# gen_output.sh - regenerate test_output.txt for CSE 5402 Lab 2
+         +.                                                              
+       4  #
+       5  # Builds the program, then runs it over a representative set of
+           inputs and
+       7 -# captures everything into test_output.txt: the two well formed
+         - plays, the                                                    
+       8 -# fuzzed configuration with and without whinge mode, the numeri
+         -c edge cases,                                                  
+       9 -# two of the unrecoverable failures, and the full regression su
+         -ite.  Each                                                     
+       6 +# captures everything into test_output.txt: the provided Hamlet
+         + script (with                                                  
+       7 +# whinge mode's stderr captured on its own, to show it never re
+         +aches stdout),                                                 
+       8 +# characters exiting and re-entering across fragments, a second
+         + play, the                                                     
+       9 +# fuzzed inputs with and without whinge mode, one failure per k
+         +ind of error                                                   
+      10 +# with its exit status, the full regression suite, and a fuzzer
+         + run.  Each                                                    
+      11  # section is labeled with the command that produced it, and a n
+          on-zero exit
+      12  # status is recorded beneath the output it came from.
+      13  #
+      14  # Run this on a CEC Linux Lab machine (after "module add rust-2
+          023") so the
+      15  # captured output reflects the 1.71.0 toolchain the solution is
+           graded with.
+      16  #
+      16 -# Usage: sh gen_output.sh                                      
+      17 +# Usage: sh gen_output.sh      (from the lab2 package directory
+         +)                                                              
+      18  
+      19  OUTPUT=test_output.txt
+      20  
+     ...
+       36      return 0
+       37  }
+       38  
+       39 +# in_inputs <command...> - run a command from inside test_inpu
+          +ts/, where the                                                
+       40 +# hand-made scripts name their configuration and part files   
+       41 +in_inputs() {                                                 
+       42 +    (cd test_inputs && "$@")                                  
+       43 +}                                                             
+       44 +                                                              
+       45 +# stderr_only <command...> - show only what a command writes t
+          +o standard error                                              
+       46 +stderr_only() {                                               
+       47 +    "$@" 2>&1 > /dev/null                                     
+       48 +}                                                             
+       49 +                                                              
+       50  cargo build -q || exit 1
+       51  
+       52  {
+       53      printf '==================================================
+           ==============\n'
+       42 -    printf 'CSE 5402 Fall 2025 Lab 1 - captured output from a 
+          -test run\n'                                                   
+       54 +    printf 'CSE 5402 Fall 2025 Lab 2 - captured output from a 
+          +test run\n'                                                   
+       55      printf '==================================================
+           ==============\n'
+       56  
+       45 -    emit 'cargo run -q hamlet_ii_2_config.txt' \              
+       46 -         cargo run -q hamlet_ii_2_config.txt                  
+       57 +    emit 'cargo run -q partial_hamlet_act_ii_script.txt' \    
+       58 +         cargo run -q partial_hamlet_act_ii_script.txt        
+       59  
+       48 -    emit 'cargo run -q macbeth_ii_1_config.txt' \             
+       49 -         cargo run -q macbeth_ii_1_config.txt                 
+       60 +    emit 'cargo run -q partial_hamlet_act_ii_script.txt whinge
+          + 2>&1 > /dev/null   (stderr only)' \                          
+       61 +         stderr_only cargo run -q partial_hamlet_act_ii_script
+          +.txt whinge                                                   
+       62  
+       51 -    emit 'cargo run -q fuzz_config.txt whinge' \              
+       52 -         cargo run -q fuzz_config.txt whinge                  
+       63 +    emit 'cd test_inputs && cargo run -q recurring_script.txt'
+          + \                                                            
+       64 +         in_inputs cargo run -q recurring_script.txt          
+       65  
+       54 -    emit 'cargo run -q fuzz_config.txt        (same input, no 
+          -whinge)' \                                                    
+       55 -         cargo run -q fuzz_config.txt                         
+       66 +    emit 'cd test_inputs && cargo run -q macbeth_script.txt' \
+       67 +         in_inputs cargo run -q macbeth_script.txt            
+       68  
+       57 -    emit 'cargo run -q numeric_config.txt whinge' \           
+       58 -         cargo run -q numeric_config.txt whinge               
+       69 +    emit 'cd test_inputs && cargo run -q fuzz_script.txt whing
+          +e' \                                                          
+       70 +         in_inputs cargo run -q fuzz_script.txt whinge        
+       71  
+       60 -    emit 'cargo run -q no_valid_parts_config.txt whinge' \    
+       61 -         cargo run -q no_valid_parts_config.txt whinge        
+       72 +    emit 'cd test_inputs && cargo run -q fuzz_script.txt      
+          +  (same input, no whinge)' \                                  
+       73 +         in_inputs cargo run -q fuzz_script.txt               
+       74  
+       75 +    emit 'cd test_inputs && cargo run -q bare_scene_script.txt
+          + whinge' \                                                    
+       76 +         in_inputs cargo run -q bare_scene_script.txt whinge  
+       77 +                                                              
+       78 +    emit 'cd test_inputs && cargo run -q gaps_script.txt whing
+          +e' \                                                          
+       79 +         in_inputs cargo run -q gaps_script.txt whinge        
+       80 +                                                              
+       81 +    emit 'cd test_inputs && cargo run -q numeric_script.txt wh
+          +inge' \                                                       
+       82 +         in_inputs cargo run -q numeric_script.txt whinge     
+       83 +                                                              
+       84      emit 'cargo run -q' \
+       85           cargo run -q
+       86  
+       87 +    emit 'cargo run -q no_such_script.txt' \                  
+       88 +         cargo run -q no_such_script.txt                      
+       89 +                                                              
+       90 +    emit 'cd test_inputs && cargo run -q untitled_script.txt' 
+          +\                                                             
+       91 +         in_inputs cargo run -q untitled_script.txt           
+       92 +                                                              
+       93 +    emit 'cd test_inputs && cargo run -q missing_part_script.t
+          +xt whinge' \                                                  
+       94 +         in_inputs cargo run -q missing_part_script.txt whinge
+       95 +                                                              
+       96      emit 'sh run_tests.sh' \
+       97           sh run_tests.sh
+       98 +                                                              
+       99 +    emit 'python3 fuzz_test.py target/debug/lab2 2000' \      
+      100 +         python3 fuzz_test.py target/debug/lab2 2000          
+      101  } > "$OUTPUT"
+      102  
+      103  printf 'wrote %s (%d lines)\n' "$OUTPUT" "$(wc -l < "$OUTPUT")
+           "
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/lab2" && sh
+      gen_output.sh && grep -n -A6 'stderr only' test_output.txt; grep -n "exit
+      status\|passed" test_o…)
+  ⎿  wrote test_output.txt (559 lines)
+     294:$ cargo run -q partial_hamlet_act_ii_script.txt whinge 2>&1 > /dev
+     /null   (stderr only)
+     … +13 lines (ctrl+o to expand)
+  ⎿  1 file changed (binary, mode only or too large to show)
+  ⎿  (timeout 10m)
+
+⏺ gen_output.sh works. On the CEC machines sh is probably dash, not bash, so I'm
+  also running both shell scripts under dash to check they're POSIX-clean.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ I've converted all three test scripts to Lab 2 and removed their TODOs.
+  Everything passes against your current code: 41 of 41 regression cases, and
+  2,044 of 2,044 fuzz cases. To check that the tests can actually fail, I put
+  deliberate bugs into a scratch copy of the crate. The fuzzer caught all six I
+  tried, and run_tests.sh failed on the one I ran it against. Nothing is
+  committed.
+
+  run_tests.sh
+  - It now checks stdout and stderr separately, so a whinge message showing up
+    on stdout counts as a failure. Every non-zero exit must also print the
+    matching Error: N line.
+  - It fails if cargo build prints any warning, and it runs your unit tests.
+  - It compares the Hamlet output against the course's
+    hamlet_act_ii_scene_1.txt. It ignores whitespace there, because the sample
+    has trailing spaces after speaker names.
+  - The other cases cover entrances and exits across fragments, a character
+    exiting and re-entering, a second play (Macbeth, with a silent character),
+    whitespace, CRLF line endings and number edge cases. The Macbeth, Ghost,
+    Messenger, Sentinel and King part files are copied from Lab 1.
+  - It covers every recoverable whinge, and checks each kind of fatal error for
+    exit code 2 with nothing printed to stdout.
+  - It runs under dash, which is probably what sh is on the Linux Lab machines.
+
+  fuzz_test.py works differently from Lab 1's. It contains a separate Python
+  model of the spec that predicts the exact stdout, exit status and number of
+  warnings for random multi-fragment scripts. Before the random cases, it checks
+  the model against the Hamlet script and all the hand-made inputs. That is
+  also how I confirmed test_inputs/expected_hamlet.txt, which I generated from
+  your program.
+
+  gen_output.sh writes test_output.txt, the "significant test output" the spec
+  asks for. It captures the Hamlet run with its stderr shown on its own, the
+  hand-made cases, each failure with its exit code, and full runs of the suite
+  and fuzzer. I generated it on your Mac, so rerun it on a Linux Lab machine
+  before you submit.
+
+  These tests lock in the current behavior for your three open TODO decisions:
+  - Tied line numbers within one part file: in gaps.txt the program prints "Line
+    one again." before "Line one." because sort() breaks ties on the text.
+  - Tied line numbers across players: the player sorted earlier speaks first.
+  - A config file whose lines are all malformed: it gives an empty fragment and
+    exits 0.
+
+  If you change any of these, you'll need to update the fuzzer's load_player,
+  recite_fragment or load_fragment, and possibly expected_*.txt.
+
+  One result that looks odd but follows the spec: in Macbeth, the silent Servant
+  enters first. The spec's ordering puts players with no lines before players
+  who speak.
+
+  Your remaining TODOs are the comments, the ReadMe sections (Testing can
+  describe this setup) and those three decisions. When you're back, export this
+  conversation into ai_transcripts/ for your AI citation.
+✻ Worked for 5m 54s · done 1:32 AM

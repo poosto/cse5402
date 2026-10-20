@@ -1,0 +1,4 @@
+Banquo Banquo.txt
+Fleance Fleance.txt
+Macbeth Macbeth.txt
+Servant Servant.txt

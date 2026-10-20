@@ -1,0 +1,34 @@
+Scene One
+
+[Enter Alpha.]
+[Enter Beta.]
+
+Alpha.
+Alpha speaks first in A.
+
+Beta.
+Beta speaks second in A.
+
+Alpha.
+Alpha speaks third in A.
+
+[Exit Alpha.]
+[Enter Gamma.]
+
+Beta.
+Beta opens B.
+
+Gamma.
+Gamma closes B.
+
+[Exit Gamma.]
+[Exit Beta.]
+
+Scene Two
+
+[Enter Alpha.]
+
+Alpha.
+Alpha returns in C.
+
+[Exit Alpha.]

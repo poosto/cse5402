@@ -1,265 +1,415 @@
 #!/usr/bin/env python3
-# TODO: adapt for Lab 2 (script files with [scene] directives, entrances/exits, whinge output on stderr).
-"""Randomized fuzzer for CSE 5402 Lab 1.
+"""Randomized fuzzer for CSE 5402 Lab 2.
 
-Generates random configuration files and part files (including malformed,
-adversarial, and pathological content), runs the program on them, and checks
-invariants the lab spec requires:
+Generates random script files, scene fragment configuration files, and part
+files (including malformed, adversarial, and pathological content), runs the
+program on them, and compares the program against an independent Python model
+of the behavior the lab spec requires.  The model predicts the exact standard
+output, the exit status, and how many whinge warnings should appear.  Checked
+invariants:
 
-  I1  the program never panics / never crashes (exit status must be 0, 1, or 2)
-  I2  the program always terminates promptly (no hangs / infinite loops)
-  I3  a successful run prints the title, then well-formed speaker blocks
-  I4  recited lines appear in nondecreasing line-number order
-  I5  a speaker is announced exactly when the speaker changes
-  I6  every well-formed numbered line from a readable part file is recited
-  I7  running without "whinge" prints no WARNING lines
-  I8  the program is deterministic for identical input
+  I1  the program never panics or crashes (exit status must be 0 or 2)
+  I2  the program always terminates promptly (no hangs or infinite loops)
+  I3  a successful run's stdout matches the model exactly: scene titles only
+      on a scene's first fragment, entrances in first-speaking order, lines in
+      line-number order, speaker changes announced, exits in reverse order
+  I4  a failed run reports "Error: 2", prints an ERROR message, and recites
+      nothing on stdout
+  I5  whinge output goes only to stderr, never stdout; without whinge, stderr
+      is empty on success
+  I6  with whinge, the number of WARNING lines matches the model
+  I7  the program is deterministic for identical input
+
+Before the random cases, the model is also checked against the provided Hamlet
+script and the hand-made inputs in test_inputs/, so a model bug shows up there.
+
+Usage: python3 fuzz_test.py <path to lab2 binary> [iterations] [seed]
 """
 
 import os, random, re, shutil, subprocess, sys, tempfile
 
-LAB1 = os.path.abspath(sys.argv[1])
+LAB2 = os.path.abspath(sys.argv[1])
 ITERATIONS = int(sys.argv[2]) if len(sys.argv) > 2 else 2000
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 5402
 
-NAMES = ["King", "Queen", "Hamlet", "Ghost", "A", "Ros_Guil", "Ünïcødé", "x" * 200, "123", "-", "..", "a.b"]
+ROOT = os.path.dirname(os.path.abspath(__file__))
+USIZE_MAX = 2**64 - 1
+SCENE_DIRECTIVE = "[scene]"
 
-# Snippets of line text, each paired with the line number it should parse as,
-# or None when the line is expected to be skipped as badly formed.
-def gen_part_line(rng, used_numbers):
-    kind = rng.choice([
-        "good", "good", "good", "good", "good",
-        "blank", "ws_only", "single_token", "bad_number", "negative",
-        "huge", "float", "plus", "leading_ws", "tabs", "crlf",
-        "zero", "usize_max", "overflow", "number_only_ws", "unicode",
-    ])
-    if kind == "good":
-        n = rng.randint(0, 10_000)
-        text = rng.choice(["To be or not to be", "Ay, my lord.", "What ho!",
-                           "   spaced   out   ", "a", "x" * 300, "Ünïcødé — ✓"])
-        sep = rng.choice([" ", "\t", "   ", " \t "])
-        return (f"{n}{sep}{text}", n, text.strip())
-    if kind == "blank":
-        return ("", None, None)
-    if kind == "ws_only":
-        return (rng.choice(["   ", "\t", " \t  "]), None, None)
-    if kind == "single_token":
-        return (rng.choice(["42", "hello", "x" * 100]), None, None)
-    if kind == "bad_number":
-        return ("abc rest of line", None, None)
-    if kind == "negative":
-        return ("-5 negative line number", None, None)
-    if kind == "huge":
-        return ("9" * 40 + " too big for usize", None, None)
-    if kind == "float":
-        return ("3.14 not an integer", None, None)
-    if kind == "plus":
-        return ("+7 leading plus sign", 7, "leading plus sign")
-    if kind == "leading_ws":
-        # grab_trimmed_file_lines trims, so this is a well formed line
-        n = rng.randint(0, 999)
-        return (f"    {n}   indented line   ", n, "indented line")
-    if kind == "tabs":
-        n = rng.randint(0, 999)
-        return (f"{n}\t\ttab separated", n, "tab separated")
-    if kind == "crlf":
-        n = rng.randint(0, 999)
-        return (f"{n} carriage return line\r", n, "carriage return line")
-    if kind == "zero":
-        return ("0 zeroth line", 0, "zeroth line")
-    if kind == "usize_max":
-        n = 2**64 - 1
-        return (f"{n} last line ever", n, "last line ever")
-    if kind == "overflow":
-        return (f"{2**64} overflows usize", None, None)
-    if kind == "number_only_ws":
-        # "5   " trims to "5" -> single token -> skipped
-        return ("5    ", None, None)
-    if kind == "unicode":
-        n = rng.randint(0, 999)
-        return (f"{n} Ünïcødé ✓ — ok", n, "Ünïcødé ✓ — ok")
-    raise AssertionError(kind)
+# Rust's trim() and split_whitespace() use the Unicode White_Space property,
+# which differs slightly from Python's str.isspace(), so spell it out.
+RUST_WS = ("\t\n\x0b\x0c\r \x85\xa0 "
+           + "".join(chr(c) for c in range(0x2000, 0x200B))
+           + "    　")
+WS_RUN = re.compile("[" + re.escape(RUST_WS) + "]+")
 
 
-def gen_case(rng, workdir):
-    """Build one random test case; return (config_name, expected_lines or None).
+# ---------------------------------------------------------------------------
+# Model of the program
+# ---------------------------------------------------------------------------
 
-    expected_lines is the sorted list of (number, speaker, text) the program
-    should recite, or None when we expect script generation to fail.
-    """
-    n_chars = rng.randint(0, 5)
-    config_lines = []
-    expected = []
-    readable_parts = 0
-    title = rng.choice(["Hamlet, ACT II, Scene II", "A Play", "   Title With   Spaces   ",
-                        "Ünïcødé Title ✓", "x" * 300, "one"])
-    config_lines.append(title)
-
-    for i in range(n_chars):
-        name = rng.choice(NAMES)
-        flavor = rng.choice(["ok", "ok", "ok", "ok", "missing", "extra_tokens",
-                             "one_token", "blank", "ws", "dir", "empty_file", "binary"])
-        fname = f"part{i}.txt"
-
-        if flavor == "blank":
-            config_lines.append("")
-            continue
-        if flavor == "ws":
-            config_lines.append(rng.choice(["   ", "\t\t"]))
-            continue
-        if flavor == "one_token":
-            config_lines.append(name)
-            continue
-        if flavor == "missing":
-            config_lines.append(f"{name} no_such_file_{i}.txt")
-            continue
-        if flavor == "dir":
-            os.mkdir(os.path.join(workdir, f"dir{i}"))
-            config_lines.append(f"{name} dir{i}")
-            continue
-        if flavor == "binary":
-            with open(os.path.join(workdir, fname), "wb") as f:
-                f.write(b"\xff\xfe\x00\x01 invalid utf-8\n")
-            config_lines.append(f"{name} {fname}")
-            continue
-
-        # ok / extra_tokens / empty_file all have a readable part file
-        body = []
-        if flavor != "empty_file":
-            for _ in range(rng.randint(0, 8)):
-                raw, num, text = gen_part_line(rng, None)
-                body.append(raw)
-                if num is not None:
-                    expected.append((num, name, text))
-
-        newline = rng.choice(["\n", "\r\n"])
-        trailing = rng.choice(["", newline])
-        with open(os.path.join(workdir, fname), "w", encoding="utf-8") as f:
-            f.write(newline.join(body) + trailing)
-        readable_parts += 1
-
-        if flavor == "extra_tokens":
-            config_lines.append(f"{name} {fname} extra ignored tokens")
-        else:
-            sep = rng.choice([" ", "\t", "   "])
-            config_lines.append(f"{name}{sep}{fname}")
-
-    # sprinkle blank lines through the config
-    for _ in range(rng.randint(0, 3)):
-        config_lines.insert(rng.randint(1, len(config_lines)), rng.choice(["", "  ", "\t"]))
-
-    config_name = "config.txt"
-    newline = rng.choice(["\n", "\r\n"])
-    with open(os.path.join(workdir, config_name), "w", encoding="utf-8") as f:
-        f.write(newline.join(config_lines) + rng.choice(["", newline]))
-
-    nonblank = [l for l in config_lines if l.strip()]
-    if len(nonblank) < 2 or readable_parts == 0:
-        expected = None   # script generation must fail
-    else:
-        expected.sort()
-    return config_name, expected
+class Failed(Exception):
+    """Script generation fails (the program should exit with error code 2)."""
 
 
-def check_output(out, expected, whinge):
-    """Verify invariants I3-I7 against the recited script."""
-    lines = out.split("\n")
+def trim(s):
+    return s.strip(RUST_WS)
+
+
+def split_ws(s):
+    return [t for t in WS_RUN.split(s) if t]
+
+
+def read_lines(path):
+    """grab_trimmed_file_lines: every line trimmed, or Failed if unreadable."""
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        text = data.decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        raise Failed(path)
+    lines = text.split("\n")
     if lines and lines[-1] == "":
-        lines.pop()
-    # Drop WARNING lines, which may be interleaved before the script is printed.
-    warnings = [l for l in lines if l.startswith("WARNING: ")]
-    if warnings and not whinge:
-        return "printed WARNING lines without whinge mode"    # I7
-    body = [l for l in lines if not l.startswith("WARNING: ")]
+        lines.pop()   # read_line reports EOF rather than a final empty line
+    return [trim(line) for line in lines]
 
-    if not body:
-        return "printed no output at all"
-    body = body[1:]   # I3: first line is the title
 
-    recited = []
-    speaker = None
-    i = 0
-    while i < len(body):
-        if body[i] == "" and i + 1 < len(body) and body[i + 1].endswith("."):
-            candidate = body[i + 1][:-1]
-            # A speaker announcement is a blank line plus "Name." where Name is
-            # one of the speakers we still expect to hear from.
-            if expected is not None and any(c == candidate for _, c, _ in expected):
-                if candidate == speaker:
-                    return f"re-announced speaker {candidate!r} without a change"   # I5
-                speaker = candidate
-                i += 2
-                continue
-        recited.append((speaker, body[i]))
-        i += 1
-
-    if expected is None:
+def parse_usize(token):
+    """str::parse::<usize>: an optional '+' then ASCII digits, within range."""
+    digits = token[1:] if token.startswith("+") else token
+    if not digits or any(c not in "0123456789" for c in digits):
         return None
-    exp = [(c, t) for _, c, t in expected]
-    if recited != exp:
-        return f"recited {recited!r} but expected {exp!r}"   # I4/I6
+    value = int(digits)
+    return value if value <= USIZE_MAX else None
+
+
+class Model:
+    def __init__(self, workdir):
+        self.workdir = workdir
+        self.out = []
+        self.warnings = 0
+
+    def path(self, name):
+        return os.path.join(self.workdir, name)
+
+    def load_player(self, name, part_file):
+        lines = []
+        for line in read_lines(self.path(part_file)):
+            if not line:
+                continue
+            match = re.search("[" + re.escape(RUST_WS) + "]", line)
+            if not match:
+                self.warnings += 1   # only one token
+                continue
+            number = parse_usize(line[:match.start()])
+            if number is None:
+                self.warnings += 1   # first token is not a usize
+                continue
+            lines.append((number, trim(line[match.end():])))
+        lines.sort()
+        return {"name": name, "lines": lines, "index": 0}
+
+    def load_fragment(self, config_file, title):
+        lines = [line for line in read_lines(self.path(config_file)) if line]
+        if not lines:
+            raise Failed(config_file)
+        players = []
+        for line in lines:
+            words = split_ws(line)
+            if len(words) != 2:
+                self.warnings += 1
+            if len(words) >= 2:
+                players.append(self.load_player(words[0], words[1]))
+        # silent players first, then by first line number; Python's sort is
+        # stable, like Rust's Vec::sort
+        players.sort(key=lambda p: (1, p["lines"][0][0]) if p["lines"] else (0,))
+        return {"title": title, "players": players}
+
+    def prepare(self, script_file):
+        lines = [line for line in read_lines(self.path(script_file)) if line]
+        if not lines:
+            raise Failed(script_file)
+        config = []
+        for line in lines:
+            words = split_ws(line)
+            if words == [SCENE_DIRECTIVE]:
+                self.warnings += 1
+            elif words[0] == SCENE_DIRECTIVE:
+                config.append((True, " ".join(words[1:])))
+            else:
+                if len(words) > 1:
+                    self.warnings += 1
+                config.append((False, words[0]))
+        fragments, title = [], ""
+        for is_new_scene, text in config:
+            if is_new_scene:
+                title = text
+            else:
+                fragments.append(self.load_fragment(text, title))
+                title = ""
+        if not fragments or fragments[0]["title"] == "":
+            raise Failed(script_file)
+        return fragments
+
+    def recite_fragment(self, fragment):
+        players = fragment["players"]
+        expected, recent = 0, None
+        while True:
+            # Ties on a line number go to the player sorted earlier in the
+            # fragment, matching recite's min() over (line, index) tuples.
+            candidates = [(p["lines"][p["index"]][0], i)
+                          for i, p in enumerate(players) if p["index"] < len(p["lines"])]
+            if not candidates:
+                return
+            line, i = min(candidates)
+            if line != expected:
+                self.warnings += 1   # missing range or duplicated line
+            player = players[i]
+            if player["name"] != recent:
+                self.out += ["", player["name"] + "."]
+                recent = player["name"]
+            self.out.append(player["lines"][player["index"]][1])
+            player["index"] += 1
+            expected = min(line + 1, USIZE_MAX)
+
+    def recite(self, fragments):
+        for i, fragment in enumerate(fragments):
+            previous = {p["name"] for p in fragments[i - 1]["players"]} if i > 0 else set()
+            entering = [p for p in fragment["players"] if p["name"] not in previous]
+            if trim(fragment["title"]):
+                if i > 0:
+                    self.out.append("")
+                self.out.append(fragment["title"])
+                if entering:
+                    self.out.append("")
+            self.out += ["[Enter %s.]" % p["name"] for p in entering]
+
+            self.recite_fragment(fragment)
+
+            following = ({p["name"] for p in fragments[i + 1]["players"]}
+                         if i + 1 < len(fragments) else set())
+            exiting = [p for p in reversed(fragment["players"]) if p["name"] not in following]
+            if exiting:
+                self.out.append("")
+            self.out += ["[Exit %s.]" % p["name"] for p in exiting]
+
+
+def predict(workdir, script_file):
+    """Return (expected stdout or None on failure, expected warning count)."""
+    model = Model(workdir)
+    try:
+        fragments = model.prepare(script_file)
+    except Failed:
+        return None, None
+    model.recite(fragments)
+    return "".join(line + "\n" for line in model.out), model.warnings
+
+
+# ---------------------------------------------------------------------------
+# Running and checking the program
+# ---------------------------------------------------------------------------
+
+def run(workdir, script_file, whinge):
+    argv = [LAB2, script_file] + (["whinge"] if whinge else [])
+    return subprocess.run(argv, cwd=workdir, capture_output=True, timeout=10)
+
+
+def check(workdir, script_file, whinge):
+    """Return None if the program agrees with the model, else a description."""
+    expected_out, expected_warnings = predict(workdir, script_file)
+    try:
+        p = run(workdir, script_file, whinge)
+    except subprocess.TimeoutExpired:
+        return "TIMEOUT (I2)"
+    out = p.stdout.decode("utf-8", "replace")
+    err = p.stderr.decode("utf-8", "replace")
+    err_lines = err.splitlines()
+    warnings = [l for l in err_lines if l.startswith("WARNING: ")]
+
+    if p.returncode not in (0, 2):
+        return "bad exit status %d (I1)" % p.returncode
+    if "WARNING" in out:
+        return "WARNING printed on stdout (I5)"
+    if not whinge and warnings:
+        return "WARNING printed without whinge mode (I5)"
+
+    if expected_out is None:
+        if p.returncode != 2 or "Error: 2" not in err_lines:
+            return "expected script generation to fail with Error: 2, got status %d (I4)" % p.returncode
+        if not any(l.startswith("ERROR: ") for l in err_lines):
+            return "failed without an ERROR message (I4)"
+        if out:
+            return "failed but still printed to stdout (I4)"
+    else:
+        if p.returncode != 0:
+            return "expected success, got status %d (I1)" % p.returncode
+        if out != expected_out:
+            return "stdout differs from the model (I3)\n--- expected:\n%s\n--- actual:\n%s" % (
+                expected_out[:1500], out[:1500])
+        if not whinge and err:
+            return "stderr not empty on a quiet successful run (I5)"
+        if whinge and len(warnings) != expected_warnings:
+            return "expected %d WARNING lines, saw %d (I6)" % (expected_warnings, len(warnings))
+        if len(warnings) != len(err_lines):
+            return "unexpected non-WARNING stderr on success: %r" % err[:300]
+
+    q = run(workdir, script_file, whinge)
+    if q.stdout != p.stdout or q.stderr != p.stderr or q.returncode != p.returncode:
+        return "nondeterministic output (I7)"
     return None
 
 
+# ---------------------------------------------------------------------------
+# Random input generation
+# ---------------------------------------------------------------------------
+
+NAMES = ["King", "Queen", "Hamlet", "Ghost", "A", "Ros_Guil", "Ünïcødé",
+         "x" * 60, "123", "-", "..", "a.b"]
+TEXTS = ["To be or not to be", "Ay, my lord.", "What ho!", "   spaced   out   ",
+         "a", "x" * 300, "Ünïcødé — ✓", "[scene] not a directive here"]
+TITLE_WORDS = ["Hamlet", "ACT", "II", "Scene", "I", "A", "room", "Ünïcødé", "✓",
+               "[scene]", "x" * 80]
+
+
+def gen_part_line(rng):
+    kind = rng.choice(["good"] * 6 + [
+        "blank", "ws_only", "single_token", "bad_number", "negative", "huge",
+        "float", "plus", "lone_plus", "leading_ws", "tabs", "zero", "usize_max",
+        "overflow", "number_only_ws", "unicode", "fullwidth_digit"])
+    n = rng.randint(0, 40)
+    if kind == "good":
+        sep = rng.choice([" ", "\t", "   ", " \t "])
+        return f"{n}{sep}{rng.choice(TEXTS)}"
+    return {
+        "blank": "",
+        "ws_only": rng.choice(["   ", "\t", " \t  "]),
+        "single_token": rng.choice(["42", "hello", "x" * 100]),
+        "bad_number": "abc rest of line",
+        "negative": "-5 negative line number",
+        "huge": "9" * 40 + " too big for usize",
+        "float": "3.14 not an integer",
+        "plus": f"+{n} leading plus sign",
+        "lone_plus": "+ just a plus sign",
+        "leading_ws": f"    {n}   indented line   ",
+        "tabs": f"{n}\t\ttab separated",
+        "zero": "0 zeroth line",
+        "usize_max": f"{USIZE_MAX} last line ever",
+        "overflow": f"{USIZE_MAX + 1} overflows usize",
+        "number_only_ws": f"{n}    ",
+        "unicode": f"{n} Ünïcødé ✓ — ok",
+        "fullwidth_digit": "７ not an ASCII digit",
+    }[kind]
+
+
+def write_lines(rng, path, lines):
+    newline = rng.choice(["\n", "\n", "\r\n"])
+    trailing = rng.choice(["", newline])
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(newline.join(lines) + trailing)
+
+
+def gen_part_file(rng, workdir, index):
+    """Create a part file (usually readable) and return its name."""
+    flavor = rng.choices(["ok", "empty", "missing", "dir", "binary"],
+                         weights=[90, 4, 2, 2, 2])[0]
+    name = f"part{index}.txt"
+    if flavor == "missing":
+        return f"no_such_part{index}.txt"
+    if flavor == "dir":
+        os.mkdir(os.path.join(workdir, f"dir{index}"))
+        return f"dir{index}"
+    if flavor == "binary":
+        with open(os.path.join(workdir, name), "wb") as f:
+            f.write(b"1 fine\n\xff\xfe\x00\x01 invalid utf-8\n")
+        return name
+    count = 0 if flavor == "empty" else rng.randint(0, 6)
+    write_lines(rng, os.path.join(workdir, name), [gen_part_line(rng) for _ in range(count)])
+    return name
+
+
+def gen_config_file(rng, workdir, index, part_files):
+    """Create a scene fragment configuration file and return its name."""
+    name = f"config{index}.txt"
+    if rng.random() < 0.03:
+        return f"no_such_config{index}.txt"
+    lines = []
+    for _ in range(rng.randint(0, 4)):
+        flavor = rng.choices(["ok", "one_token", "extra_tokens", "blank"],
+                             weights=[85, 5, 5, 5])[0]
+        character = rng.choice(NAMES)
+        part = rng.choice(part_files)
+        sep = rng.choice([" ", "\t", "   "])
+        lines.append({
+            "ok": f"{character}{sep}{part}",
+            "one_token": character,
+            "extra_tokens": f"{character} {part} extra ignored tokens",
+            "blank": rng.choice(["", "  ", "\t"]),
+        }[flavor])
+    write_lines(rng, os.path.join(workdir, name), lines)
+    return name
+
+
+def gen_title(rng):
+    words = [rng.choice(TITLE_WORDS) for _ in range(rng.randint(1, 5))]
+    return "".join(rng.choice([" ", "  ", "\t"]) + w for w in words)
+
+
+def gen_case(rng, workdir):
+    """Build one random script (with its files) and return the script name."""
+    part_files = [gen_part_file(rng, workdir, i) for i in range(rng.randint(1, 6))]
+    config_files = [gen_config_file(rng, workdir, i, part_files)
+                    for i in range(rng.randint(1, 4))]
+    lines = []
+    if rng.random() < 0.9:
+        lines.append(SCENE_DIRECTIVE + gen_title(rng))   # usually starts with a title
+    for _ in range(rng.randint(0, 7)):
+        flavor = rng.choices(["config", "scene", "bare_scene", "blank", "extra_tokens"],
+                             weights=[55, 20, 5, 10, 10])[0]
+        lines.append({
+            "config": lambda: rng.choice(config_files),
+            "scene": lambda: rng.choice(["", "  "]) + SCENE_DIRECTIVE + gen_title(rng),
+            "bare_scene": lambda: SCENE_DIRECTIVE + rng.choice(["", "   "]),
+            "blank": lambda: rng.choice(["", "   ", "\t"]),
+            "extra_tokens": lambda: rng.choice(config_files) + " extra tokens",
+        }[flavor]())
+    script = "script.txt"
+    if rng.random() < 0.02:
+        return "no_such_script.txt"
+    write_lines(rng, os.path.join(workdir, script), lines)
+    return script
+
+
+# ---------------------------------------------------------------------------
+
 def main():
-    rng = random.Random(SEED)
     failures = []
-    for it in range(ITERATIONS):
-        workdir = tempfile.mkdtemp(prefix="lab1fuzz")
-        try:
-            case_rng = random.Random(rng.randrange(2**63))
-            config, expected = gen_case(case_rng, workdir)
-            whinge = case_rng.random() < 0.5
-            argv = [LAB1, config] + (["whinge"] if whinge else [])
-            try:
-                p = subprocess.run(argv, cwd=workdir, capture_output=True,
-                                   text=True, timeout=10)
-            except subprocess.TimeoutExpired:
-                failures.append((workdir, "TIMEOUT (I2)", ""))   # I2
-                workdir = None
-                continue
 
-            if p.returncode not in (0, 1):
-                failures.append((workdir, f"bad exit status {p.returncode} (I1)",
-                                 p.stdout + p.stderr))
-                workdir = None
-                continue
+    # The model must agree with the program on the hand-checked inputs first.
+    fixed = [(ROOT, "partial_hamlet_act_ii_script.txt")]
+    inputs = os.path.join(ROOT, "test_inputs")
+    fixed += [(inputs, f) for f in sorted(os.listdir(inputs)) if f.endswith("_script.txt")]
+    for workdir, script in fixed:
+        for whinge in (False, True):
+            problem = check(workdir, script, whinge)
+            if problem:
+                failures.append((os.path.join(workdir, script), problem))
 
-            # main returns Result<(), u8>, so the lab's error code shows up in
-            # the "Error: N" line Rust prints on stderr, not in the exit status.
-            reported = re.findall(r"^Error: (\d+)$", p.stderr, re.M)
-            want_ok = expected is not None
-            if want_ok and (p.returncode != 0 or reported):
-                failures.append((workdir, f"expected success, got status {p.returncode} {reported}",
-                                 p.stdout + p.stderr))
-                workdir = None
-                continue
-            if not want_ok and reported != ["2"]:
-                failures.append((workdir, f"expected script-gen error code 2, got {reported!r} (status {p.returncode})",
-                                 p.stdout + p.stderr))
-                workdir = None
-                continue
+    rng = random.Random(SEED)
+    for _ in range(ITERATIONS):
+        workdir = tempfile.mkdtemp(prefix="lab2fuzz")
+        case_rng = random.Random(rng.randrange(2**63))
+        script = gen_case(case_rng, workdir)
+        problem = check(workdir, script, case_rng.random() < 0.5)
+        if problem:
+            failures.append((workdir, problem))   # keep the directory to reproduce
+        else:
+            shutil.rmtree(workdir, ignore_errors=True)
 
-            if want_ok:
-                problem = check_output(p.stdout, expected, whinge)
-                if problem:
-                    failures.append((workdir, problem, p.stdout))
-                    workdir = None
-                    continue
-
-            # I8: determinism
-            q = subprocess.run(argv, cwd=workdir, capture_output=True, text=True, timeout=10)
-            if q.stdout != p.stdout or q.returncode != p.returncode:
-                failures.append((workdir, "nondeterministic output (I8)", p.stdout))
-                workdir = None
-                continue
-        finally:
-            if workdir:
-                shutil.rmtree(workdir, ignore_errors=True)
-
-    print(f"{ITERATIONS - len(failures)}/{ITERATIONS} cases passed")
-    for wd, why, out in failures[:10]:
-        print(f"\nFAIL: {why}\n  repro dir: {wd}\n  output:\n{out[:1500]}")
+    total = 2 * len(fixed) + ITERATIONS
+    print(f"{total - len(failures)}/{total} cases passed "
+          f"({2 * len(fixed)} fixed, {ITERATIONS} random, seed {SEED})")
+    for where, why in failures[:10]:
+        print(f"\nFAIL: {why}\n  repro: {where}")
     return 1 if failures else 0
 
 

@@ -1,0 +1,2 @@
+[scene] Macbeth ACT II Scene I Court of Macbeth's castle by William Shakespeare
+macbeth_ii_1_config.txt

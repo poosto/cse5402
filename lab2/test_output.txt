@@ -1,0 +1,559 @@
+================================================================
+CSE 5402 Fall 2025 Lab 2 - captured output from a test run
+================================================================
+
+$ cargo run -q partial_hamlet_act_ii_script.txt
+----------------------------------------------------------------
+Hamlet Prince of Denmark ACT II Scene I A room in Polonius house by William Shakespeare
+
+[Enter Polonius.]
+[Enter Reynaldo.]
+
+Polonius.
+Give him this money and these notes, Reynaldo.
+
+Reynaldo.
+I will, my lord.
+
+Polonius.
+You shall do marvellous wisely, good Reynaldo,
+Before You visit him, to make inquiry
+Of his behaviour.
+
+Reynaldo.
+My lord, I did intend it.
+
+Polonius.
+Marry, well said; very well said. Look you, sir,
+Enquire me first what Danskers are in Paris;
+And how, and who, what means, and where they keep,
+What company, at what expense; and finding,
+By this encompassment and drift of question,
+That they do know my son, come you more nearer
+Than your particular demands will touch it:
+Take you, as 'twere, some distant knowledge of him;
+As thus, 'I know his father and his friends,
+And in part hi;m;--do you mark this, Reynaldo?
+
+Reynaldo.
+Ay, very well, my lord.
+
+Polonius.
+'And in part him;--but,' you may say, 'not well:
+But if't be he I mean, he's very wild;
+Addicted so and so;' and there put on him
+What forgeries you please; marry, none so rank
+As may dishonour him; take heed of that;
+But, sir, such wanton, wild, and usual slips
+As are companions noted and most known
+To youth and liberty.
+
+Reynaldo.
+As gaming, my lord.
+
+Polonius.
+Ay, or drinking, fencing, swearing, quarrelling,
+Drabbing:--you may go so far.
+
+Reynaldo.
+My lord, that would dishonour him.
+
+Polonius.
+Faith, no; as you may season it in the charge.
+You must not put another scandal on him,
+That he is open to incontinency;
+That's not my meaning: but breathe his faults so quaintly
+That they may seem the taints of liberty;
+The flash and outbreak of a fiery mind;
+A savageness in unreclaimed blood,
+Of general assault.
+
+Reynaldo.
+But, my good lord,--
+
+Polonius.
+Wherefore should you do this?
+
+Reynaldo.
+Ay, my lord,
+I would know that.
+
+Polonius.
+Marry, sir, here's my drift;
+And I believe it is a fetch of warrant:
+You laying these slight sullies on my son
+As 'twere a thing a little soil'd i' the working,
+Mark you,
+Your party in converse, him you would sound,
+Having ever seen in the prenominate crimes
+The youth you breathe of guilty, be assur'd
+He closes with you in this consequence;
+'Good sir,' or so; or 'friend,' or 'gentleman'--
+According to the phrase or the addition
+Of man and country.
+
+Reynaldo.
+Very good, my lord.
+
+Polonius.
+And then, sir, does he this,--he does--What was I about to say?--
+By the mass, I was about to say something:--Where did I leave?
+
+Reynaldo.
+At 'closes in the consequence,' at 'friend or so,' and
+gentleman.'
+
+Polonius.
+At--closes in the consequence'--ay, marry!
+He closes with you thus:--'I know the gentleman;
+I saw him yesterday, or t'other day,
+Or then, or then; with such, or such; and, as you say,
+There was he gaming; there o'ertook in's rouse;
+There falling out at tennis': or perchance,
+'I saw him enter such a house of sale,'--
+Videlicet, a brothel,--or so forth.--
+See you now;
+Your bait of falsehood takes this carp of truth:
+And thus do we of wisdom and of reach,
+With windlaces, and with assays of bias,
+By indirections find directions out:
+So, by my former lecture and advice,
+Shall you my son. You have me, have you not?
+
+Reynaldo.
+My lord, I have.
+
+Polonius.
+God b' wi' you, fare you well.
+
+Reynaldo.
+Good my lord!
+
+Polonius.
+Observe his inclination in yourself.
+
+Reynaldo.
+I shall, my lord.
+
+Polonius.
+And let him ply his music.
+
+Reynaldo.
+Well, my lord.
+
+Polonius.
+Farewell!
+
+[Exit Reynaldo.]
+[Enter Ophelia.]
+
+Polonius.
+How now, Ophelia! what's the matter?
+
+Ophelia.
+Alas, my lord, I have been so affrighted!
+
+Polonius.
+With what, i' the name of God?
+
+Ophelia.
+My lord, as I was sewing in my chamber,
+Lord Hamlet,--with his doublet all unbrac'd;
+No hat upon his head; his stockings foul'd,
+Ungart'red, and down-gyved to his ankle;
+Pale as his shirt; his knees knocking each other;
+And with a look so piteous in purport
+As if he had been loosed out of hell
+To speak of horrors,--he comes before me.
+
+Polonius.
+Mad for thy love?
+
+Ophelia.
+My lord, I do not know;
+But truly I do fear it.
+
+Polonius.
+What said he?
+
+Ophelia.
+He took me by the wrist, and held me hard;
+Then goes he to the length of all his arm;
+And with his other hand thus o'er his brow,
+He falls to such perusal of my face
+As he would draw it. Long stay'd he so;
+At last,--a little shaking of mine arm,
+And thrice his head thus waving up and down,--
+He rais'd a sigh so piteous and profound
+As it did seem to shatter all his bulk
+And end his being: that done, he lets me go:
+And, with his head over his shoulder turn'd
+He seem'd to find his way without his eyes;
+For out o' doors he went without their help,
+And to the last bended their light on me.
+
+Polonius.
+Come, go with me: I will go seek the king.
+This is the very ecstasy of love;
+Whose violent property fordoes itself,
+And leads the will to desperate undertakings,
+As oft as any passion under heaven
+That does afflict our natures. I am sorry,--
+What, have you given him any hard words of late?
+
+Ophelia.
+No, my good lord; but, as you did command,
+I did repel his letters and denied
+His access to me.
+
+Polonius.
+That hath made him mad.
+I am sorry that with better heed and judgment
+I had not quoted him: I fear'd he did but trifle,
+And meant to wreck thee; but beshrew my jealousy!
+It seems it as proper to our age
+To cast beyond ourselves in our opinions
+As it is common for the younger sort
+To lack discretion. Come, go we to the king:
+This must be known; which, being kept close, might move
+More grief to hide than hate to utter love.
+
+[Exit Ophelia.]
+[Exit Polonius.]
+
+Hamlet Prince of Denmark ACT II Scene II A room in the Castle by William Shakespeare
+
+[Enter King.]
+[Enter Queen.]
+[Enter Rosencrantz.]
+[Enter Guildenstern.]
+
+King.
+Welcome, dear Rosencrantz and Guildenstern!
+Moreover that we much did long to see you,
+The need we have to use you did provoke
+Our hasty sending. Something have you heard
+Of Hamlet's transformation; so I call it,
+Since nor the exterior nor the inward man
+Resembles that it was. What it should be,
+More than his father's death, that thus hath put him
+So much from the understanding of himself,
+I cannot dream of: I entreat you both
+That, being of so young days brought up with him,
+And since so neighbour'd to his youth and humour,
+That you vouchsafe your rest here in our court
+Some little time: so by your companies
+To draw him on to pleasures, and to gather,
+So much as from occasion you may glean,
+Whether aught, to us unknown, afflicts him thus,
+That, open'd, lies within our remedy.
+
+Queen.
+Good gentlemen, he hath much talk'd of you,
+And sure I am two men there are not living
+To whom he more adheres. If it will please you
+To show us so much gentry and good-will
+As to expend your time with us awhile,
+For the supply and profit of our hope,
+Your visitation shall receive such thanks
+As fits a king's remembrance.
+
+Rosencrantz.
+Both your majesties
+Might, by the sovereign power you have of us,
+Put your dread pleasures more into command
+Than to entreaty.
+
+Guildenstern.
+We both obey,
+And here give up ourselves, in the full bent,
+To lay our service freely at your feet,
+To be commanded.
+
+King.
+Thanks, Rosencrantz and gentle Guildenstern.
+
+Queen.
+Thanks, Guildenstern and gentle Rosencrantz:
+And I beseech you instantly to visit
+My too-much-changed son.--Go, some of you,
+And bring these gentlemen where Hamlet is.
+
+Guildenstern.
+Heavens make our presence and our practices
+Pleasant and helpful to him!
+
+Queen.
+Ay, amen!
+
+[Exit Guildenstern.]
+[Exit Rosencrantz.]
+[Exit Queen.]
+[Exit King.]
+
+$ cargo run -q partial_hamlet_act_ii_script.txt whinge 2>&1 > /dev/null   (stderr only)
+----------------------------------------------------------------
+WARNING: Line 0 is missing
+WARNING: Line 0 is missing
+WARNING: Line 0 is missing
+
+$ cd test_inputs && cargo run -q recurring_script.txt
+----------------------------------------------------------------
+Scene One
+
+[Enter Alpha.]
+[Enter Beta.]
+
+Alpha.
+Alpha speaks first in A.
+
+Beta.
+Beta speaks second in A.
+
+Alpha.
+Alpha speaks third in A.
+
+[Exit Alpha.]
+[Enter Gamma.]
+
+Beta.
+Beta opens B.
+
+Gamma.
+Gamma closes B.
+
+[Exit Gamma.]
+[Exit Beta.]
+
+Scene Two
+
+[Enter Alpha.]
+
+Alpha.
+Alpha returns in C.
+
+[Exit Alpha.]
+
+$ cd test_inputs && cargo run -q macbeth_script.txt
+----------------------------------------------------------------
+Macbeth ACT II Scene I Court of Macbeth's castle by William Shakespeare
+
+[Enter Servant.]
+[Enter Banquo.]
+[Enter Fleance.]
+[Enter Macbeth.]
+
+Banquo.
+How goes the night, boy?
+
+Fleance.
+The moon is down; I have not heard the clock.
+
+Banquo.
+And she goes down at twelve.
+
+Fleance.
+I take't, 'tis later, sir.
+
+Banquo.
+Hold, take my sword.--There's husbandry in heaven;
+Their candles are all out.--Take thee that too.
+A heavy summons lies like lead upon me,
+And yet I would not sleep: merciful powers,
+Restrain in me the cursed thoughts that nature
+Gives way to in repose!--Give me my sword.--
+Who's there?
+
+Macbeth.
+A friend.
+
+Banquo.
+What, sir! not yet at rest? The king's a-bed:
+He hath been in unusual pleasure and
+Sent forth great largess to your offices.
+
+Macbeth.
+Being unprepar'd,
+Our will became the servant to defect,
+Which else should free have wrought.
+
+[Exit Macbeth.]
+[Exit Fleance.]
+[Exit Banquo.]
+[Exit Servant.]
+
+$ cd test_inputs && cargo run -q fuzz_script.txt whinge
+----------------------------------------------------------------
+WARNING: Configuration line "Lonely" has 1 tokens, expected 2
+WARNING: Configuration line "Messenger Messenger.txt trailing tokens ignored" has 5 tokens, expected 2
+WARNING: Skipping Messenger's line because its first token "notanumber" does not represent a valid usize value
+WARNING: Skipping Messenger's line because its first token "-5" does not represent a valid usize value
+WARNING: Skipping Messenger's line "onlyonetoken" because it has only one token
+WARNING: Skipping Messenger's line because its first token "99999999999999999999999999999" does not represent a valid usize value
+Fuzzed Configuration
+
+[Enter Alpha.]
+[Enter Messenger.]
+WARNING: Line 0 is missing
+
+Alpha.
+Alpha returns in C.
+WARNING: Lines 2 to 34 are missing
+
+Messenger.
+A tie with another line number, to test stable ordering.
+WARNING: Lines 36 to 42 are missing
+A messenger enters with deliberately messy lines.
+This line has extra whitespace after its line number.
+Leading whitespace before the line number.
+
+[Exit Messenger.]
+[Exit Alpha.]
+
+$ cd test_inputs && cargo run -q fuzz_script.txt        (same input, no whinge)
+----------------------------------------------------------------
+Fuzzed Configuration
+
+[Enter Alpha.]
+[Enter Messenger.]
+
+Alpha.
+Alpha returns in C.
+
+Messenger.
+A tie with another line number, to test stable ordering.
+A messenger enters with deliberately messy lines.
+This line has extra whitespace after its line number.
+Leading whitespace before the line number.
+
+[Exit Messenger.]
+[Exit Alpha.]
+
+$ cd test_inputs && cargo run -q bare_scene_script.txt whinge
+----------------------------------------------------------------
+WARNING: Skipping script line "[scene]" because its [scene] directive has no scene title
+WARNING: Skipping script line "[scene]" because its [scene] directive has no scene title
+A Titled Scene
+
+[Enter Alpha.]
+WARNING: Line 0 is missing
+
+Alpha.
+Alpha returns in C.
+
+[Exit Alpha.]
+
+$ cd test_inputs && cargo run -q gaps_script.txt whinge
+----------------------------------------------------------------
+Duplicate And Missing Lines
+
+[Enter Gapper.]
+
+Gapper.
+Line zero.
+Line one again.
+WARNING: Line 1 is duplicated
+Line one.
+WARNING: Lines 2 to 4 are missing
+Line five.
+
+[Exit Gapper.]
+
+$ cd test_inputs && cargo run -q numeric_script.txt whinge
+----------------------------------------------------------------
+WARNING: Skipping Ghost's line because its first token "1_0" does not represent a valid usize value
+WARNING: Skipping Ghost's line because its first token "3.5" does not represent a valid usize value
+WARNING: Skipping Ghost's line because its first token "0x10" does not represent a valid usize value
+WARNING: Skipping Ghost's line "6" because it has only one token
+Numeric Edge Cases
+
+[Enter Ghost.]
+WARNING: Lines 0 to 4 are missing
+
+Ghost.
+A leading plus sign is accepted by parse::<usize>.
+WARNING: Line 6 is missing
+Leading zeros still parse as a usize.
+WARNING: Lines 8 to 11 are missing
+Text with	an	interior	tab is preserved as written.
+WARNING: Lines 13 to 18446744073709551614 are missing
+The largest usize value on a 64-bit machine.
+
+[Exit Ghost.]
+
+$ cargo run -q
+----------------------------------------------------------------
+usage: target/debug/lab2 <script_file_name> [whinge]
+Error: 1
+(exit status 1)
+
+$ cargo run -q no_such_script.txt
+----------------------------------------------------------------
+ERROR: Failed to read script file no_such_script.txt
+Error: 2
+(exit status 2)
+
+$ cd test_inputs && cargo run -q untitled_script.txt
+----------------------------------------------------------------
+ERROR: Script file untitled_script.txt must give a [scene] title before its first configuration file
+Error: 2
+(exit status 2)
+
+$ cd test_inputs && cargo run -q missing_part_script.txt whinge
+----------------------------------------------------------------
+WARNING: Failed to open file no_such_part.txt (No such file or directory (os error 2))
+ERROR: Failed to read part file no_such_part.txt for character Nobody
+Error: 2
+(exit status 2)
+
+$ sh run_tests.sh
+----------------------------------------------------------------
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.00s
+PASS  build has no warnings
+PASS  unit tests pass
+
+PASS  no arguments prints usage
+PASS  too many arguments prints usage
+PASS  unrecognized optional argument
+PASS  Hamlet Scene I matches hamlet_act_ii_scene_1.txt
+PASS  full Hamlet script matches expected output
+PASS  Hamlet whinges about line 0 on stderr
+PASS  Hamlet is silent on stderr by default
+PASS  characters exit, re-enter, and titles start scenes
+PASS  same cast twice in a row stays on stage
+PASS  Macbeth: lines out of order are sorted
+PASS  Macbeth: silent character enters
+PASS  Macbeth: silent character never speaks
+PASS  blank lines, tabs and extra spaces
+PASS  CRLF script and configuration
+PASS  carriage returns are trimmed
+PASS  numeric edge cases are recited
+PASS  numeric edge cases whinge
+PASS  bare [scene] line is skipped
+PASS  bare [scene] line whinges
+PASS  extra tokens after a config file
+PASS  extra tokens whinge
+PASS  second [scene] title replaces the first
+PASS  replaced [scene] title is never printed
+PASS  fuzzed configuration still recites
+PASS  fuzzed configuration whinges
+PASS  duplicate line whinges
+PASS  missing lines whinge as a range
+PASS  starting at line 0 is not a gap
+PASS  missing script file
+PASS  empty script file
+PASS  script of blank lines
+PASS  script with no configuration files
+PASS  configuration before any [scene] title
+PASS  missing configuration file
+PASS  [Scene] is not the [scene] directive
+PASS  empty configuration file
+PASS  missing part file
+PASS  part file is a directory
+PASS  part file is not UTF-8
+
+41 passed, 0 failed
+
+$ python3 fuzz_test.py target/debug/lab2 2000
+----------------------------------------------------------------
+2044/2044 cases passed (44 fixed, 2000 random, seed 5402)
