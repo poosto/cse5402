@@ -156,6 +156,12 @@ DIR=$ROOT/test_inputs
 check_output "characters exit, re-enter, and titles start scenes" test_inputs/expected_recurring.txt recurring_script.txt
 check_output "same cast twice in a row stays on stage" test_inputs/expected_repeat.txt repeat_script.txt
 
+# Tied line numbers: across players the earlier sorted player speaks first
+# (config order among players tied on their first line), and within one player
+# lines that share a number keep their part file order rather than sorting by text.
+check_output "tied line numbers keep config and file order" test_inputs/expected_ties.txt tie_script.txt
+check "tied line numbers whinge as duplicates"   0 "!WARNING" "^WARNING: Line 7 is duplicated$" tie_script.txt whinge
+
 # Well formed input from a second play.
 check "Macbeth: lines out of order are sorted"  0 "^A friend\.$"         "!." macbeth_script.txt
 check "Macbeth: silent character enters"        0 "^\[Enter Servant\.\]$" -   macbeth_script.txt

@@ -1,0 +1,28 @@
+Tied Line Numbers
+
+[Enter Cara.]
+[Enter Amy.]
+[Enter Bob.]
+
+Cara.
+Cara speaks line zero.
+
+Amy.
+Amy speaks line zero.
+
+Bob.
+Bob speaks line one.
+
+Cara.
+Cara speaks line seven.
+
+Amy.
+Zounds, from Amy.
+Ay, from Amy.
+
+Bob.
+Bob speaks line seven.
+
+[Exit Bob.]
+[Exit Amy.]
+[Exit Cara.]

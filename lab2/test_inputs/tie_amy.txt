@@ -1,0 +1,3 @@
+0 Amy speaks line zero.
+7 Zounds, from Amy.
+7 Ay, from Amy.

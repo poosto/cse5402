@@ -1,5 +1,6 @@
 TODO: update this ReadMe for Lab 2 (title, overview, build/run steps, testing, AI citations) and add the Structs, Return Wrapper, Scene Fragments, and Testing subsections the spec asks for.
 TODO: in the ReadMe (e.g. under Scene Fragments, where the spec has Player implement PartialEq/Eq/PartialOrd/Ord), write about what you learned about marker traits: Eq has no methods because it only promises PartialEq is reflexive, while Ord adds cmp because it returns Ordering instead of Option<Ordering>; also PartialEq vs Eq for floats/NaN and why partial_cmp returns an Option.
+TODO: in the Scene Fragments and Testing subsections, explain the tied line number test (test_inputs/tie_script.txt, expected_ties.txt). Across players, the player sorted earlier speaks first, so players tied on their first line keep config order. Within a player, lines with the same number keep part file order (sort_by_key). Use crlf_config.txt as the example: Lab 1 put King first (by name), Lab 2 puts Sentinel first (config order).
 
 ================================================================================
 SECTION 1: IDENTIFICATION AND DESIGN

@@ -52,10 +52,6 @@ impl SceneFragment {
 
         self.players.sort();
 
-        // TODO: decide whether a fragment with no players is an error (check the spec): a config whose character lines are all
-        // malformed (e.g. a title then "A") now prints just the title and exits 0, whereas Lab 1 failed with "No character in
-        // the configuration had a part file that could be read" and exit code 2; document the decision in ReadMe.txt.
-
         Ok(())
     }
 
@@ -142,10 +138,11 @@ impl SceneFragment {
             // Map Some values to include the index of the Player for later
             // (we can't hold a ref to it and call speak())
             // Take the min of the tuple
-            // TODO: decide how to order lines that share a line number across players (check the spec): min() on (line, idx)
-            // speaks the earlier player in sorted order first, which for tied first lines is config order (stable sort), so
-            // ../lab1/crlf_config.txt now puts Sentinel's line 1 before King's, whereas Lab 1 put King first (ordered by
-            // name); document the decision in ReadMe.txt.
+            //
+            // If players share a line number, the player sorted earlier in the players vector
+            // speaks first. Players are sorted by first line number, and players tied on their
+            // first line keep their config file order. This matches how ties keep file order within a player.
+            // TODO: document this
             let next_line = self
                 .players
                 .iter()
