@@ -270,6 +270,17 @@ Core challenges and design points are as follows:
     this lab...), but I'm curious about the performance difference since both
     are contiguous in memory and should have good cache locality, especially
     for small c.
+  - I wanted to handle ties the same across Players and within Players (i.e.,
+    their own lines). Across Players, players tied on their first line keep
+    their configuration file order, since Vec::sort is stable. Then recite
+    picks the next line with min() on (line number, index) pairs. No two
+    elements of a Vec can share the same index by construction, so a tie
+    always goes to the player sorted earlier. Within one player, lines with
+    the same number keep their part file order, because Player::prepare uses
+    sort_by_key on the line number only, rather than a plain sort() on the
+    whole (line number, text) tuple. In both cases, sorting first happens by
+    line number, then by whichever item came first (and not by some
+    lexicographical sort).
 
 Through this implementation, I learned about marker traits, namely Eq. PartialEq
 always returns a boolean, but does not guarantee reflexivity. For example, with
@@ -286,15 +297,7 @@ implements Ord, your PartialOrd implementation can simply be
 Some(Ord::cmp(self, other)). For this project, a Player can always be compared,
 and Player equivalence guarantees reflexivity, so it implements Eq and Ord.
 
-TODO: explain how tied line numbers are handled. Across players, the player
-sorted earlier speaks first, so players tied on their first line keep their
-configuration file order (Vec::sort is stable). Within one player, lines with
-the same number keep their part file order, because Player::prepare uses
-sort_by_key on the line number only, not sort on the whole (line number, text)
-tuple. Use crlf_config.txt as the example: Lab 1 printed King's line first (by
-name), and Lab 2 prints Sentinel's line first (configuration order).
-
-The script file rules the program enforces:
+Finally, these are the script file rules the program enforces:
   - A [scene] line gives its title to the next configuration file only. If two
     [scene] lines come in a row, the second title replaces the first.
   - A [scene] line with no title is skipped, with a warning in whinge mode.
