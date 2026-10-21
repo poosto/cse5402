@@ -122,6 +122,8 @@ class Model:
             if len(words) != 2:
                 self.warnings += 1
             if len(words) >= 2:
+                if any(name == words[0] for name, _ in characters):
+                    self.warnings += 1   # character already listed
                 characters.append((words[0], words[1]))
         # a config whose lines are all malformed names no characters, so it fails
         # like an empty one, before any part file is read

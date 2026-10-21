@@ -517,7 +517,7 @@ Error: 2
 
 $ sh run_tests.sh
 ----------------------------------------------------------------
-    Finished dev [unoptimized + debuginfo] target(s) in 0.04s
+    Finished dev [unoptimized + debuginfo] target(s) in 0.00s
 PASS  build has no warnings
 PASS  unit tests pass
 
@@ -548,6 +548,8 @@ PASS  second [scene] title replaces the first
 PASS  replaced [scene] title is never printed
 PASS  fuzzed configuration still recites
 PASS  fuzzed configuration whinges
+PASS  character listed twice still recites
+PASS  character listed twice whinges
 PASS  duplicate line whinges
 PASS  missing lines whinge as a range
 PASS  starting at line 0 is not a gap
@@ -566,8 +568,8 @@ PASS  missing part file
 PASS  part file is a directory
 PASS  part file is not UTF-8
 
-46 passed, 0 failed
+48 passed, 0 failed
 
 $ python3 fuzz_test.py target/debug/lab2 2000
 ----------------------------------------------------------------
-2048/2048 cases passed (48 fixed, 2000 random, seed 5402)
+2050/2050 cases passed (50 fixed, 2000 random, seed 5402)

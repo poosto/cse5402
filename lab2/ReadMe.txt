@@ -500,10 +500,11 @@ Testing was done in four layers:
        diff against hamlet_act_ii_scene_1.txt.
     2. Running the Lab 1 input files in ../lab1 after the Structs and Return
        Wrapper stages, to confirm the program still ran as it did in Lab 1.
-    3. run_tests.sh, a regression suite of 46 cases over hand-made inputs in
+    3. run_tests.sh, a regression suite of 48 cases over hand-made inputs in
        test_inputs. Each case checks the exit code, the "Error: N" line, and
        stdout and stderr separately, so whinge output must reach stderr and
-       never stdout. 16 of the checks are unit tests run by cargo test.
+       never stdout. One of the 48 cases runs cargo test, which holds the 16
+       unit tests.
     4. fuzz_test.py, a randomized tester described below.
 
 Problems that testing found, and how they were fixed:
@@ -594,6 +595,8 @@ fuzz_script.txt           A messy configuration (blank lines, a tab delimited
                           part file, Messenger.txt (a non-numeric token, a
                           negative number, a number too large for usize, a
                           single-token line, extra and leading whitespace).
+dup_character_script.txt  A configuration file that lists Banquo twice. Both
+                          entries are kept, and whinge warns about the second.
 gaps_script.txt           A duplicated line 1 and missing lines 2 to 4, which
                           whinge reports as one range. Starting at line 0 is not
                           a gap.
@@ -747,6 +750,13 @@ correct order. Only the complaint is missing. Catching it would mean tracking
 the last line spoken separately (for example as an Option<usize>), which did
 not seem worth the extra state for a case that only arises if two lines are
 given the largest possible line number.
+
+If a configuration file lists the same character more than once, the program
+keeps every entry. That character then enters and exits once per entry, and
+its lines are spoken once per entry, with whinge reporting them as duplicated
+lines. In whinge mode the program warns about each repeated entry. It does not
+merge or drop the repeats, because the configuration file does not say which
+entry was meant, and each entry may even name a different part file.
 
 ================================================================================
 SECTION 4: AI USAGE AND CITATIONS

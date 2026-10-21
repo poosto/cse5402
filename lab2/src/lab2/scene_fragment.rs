@@ -12,6 +12,8 @@ const LINE_IDX_CHARACTER_NAME: usize = 0;
 const LINE_IDX_CHARACTER_FILE: usize = 1;
 const LINE_TOKEN_COUNT: usize = 2;
 
+const FIRST_LINE_NUMBER: usize = 0;
+
 type PlayConfig = Vec<(String, String)>;
 
 pub struct SceneFragment {
@@ -54,11 +56,13 @@ impl SceneFragment {
 
     // Add one configuration line to the play config. The first two tokens are the character
     // name and part file. Lines with fewer than two tokens are skipped, and extra tokens are
-    // ignored. In whinge mode, warn if a line does not have exactly two tokens.
+    // ignored. In whinge mode, warn if a line does not have exactly two tokens, or if
+    // its character was already listed.
     fn add_config(config_line: &str, play_config: &mut PlayConfig) {
         let words: Vec<&str> = config_line.split_whitespace().collect();
+        let whinge = WHINGE_MODE.load(Ordering::SeqCst);
 
-        if words.len() != LINE_TOKEN_COUNT && WHINGE_MODE.load(Ordering::SeqCst) {
+        if words.len() != LINE_TOKEN_COUNT && whinge {
             eprintln!(
                 "WARNING: Configuration line \"{}\" has {} tokens, expected {}",
                 config_line,
@@ -68,8 +72,19 @@ impl SceneFragment {
         }
 
         if words.len() >= LINE_TOKEN_COUNT {
+            let character_name = words[LINE_IDX_CHARACTER_NAME];
+
+            // Both entries are still kept. The warning is there because the
+            // character will then enter and exit more than once.
+            if whinge && play_config.iter().any(|(name, _)| name == character_name) {
+                eprintln!(
+                    "WARNING: Character {} in configuration line \"{}\" is already listed, so it will enter and exit more than once",
+                    character_name, config_line
+                );
+            }
+
             play_config.push((
-                words[LINE_IDX_CHARACTER_NAME].to_string(),
+                character_name.to_string(),
                 words[LINE_IDX_CHARACTER_FILE].to_string(),
             ));
         }
@@ -124,7 +139,7 @@ impl SceneFragment {
     // Print every player's lines in line number order. In whinge mode, warn about
     // missing or duplicated line numbers.
     pub fn recite(&mut self) {
-        let mut expected_line = 0;
+        let mut expected_line = FIRST_LINE_NUMBER;
         let mut most_recent_speaker = String::new();
         let whinge = WHINGE_MODE.load(Ordering::SeqCst);
 
@@ -207,7 +222,7 @@ impl SceneFragment {
 
             println!("{}", self.title);
 
-            // a blank line separates the title from the entrances (as in hamlet_act_ii_scene_1.txt);
+            // a blank line separates the title from the entrances (as in hamlet_act_ii_scene_1.txt)
             // without entrances, speak's leading newline already separates it from the first line
             if entering.peek().is_some() {
                 println!();

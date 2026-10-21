@@ -183,6 +183,8 @@ check "second [scene] title replaces the first" 0 "^Surviving Title$"    -    do
 check "replaced [scene] title is never printed" 0 "!Overridden Title"    -    double_title_script.txt
 check "fuzzed configuration still recites"      0 "^Messenger\.$"        "!." fuzz_script.txt
 check "fuzzed configuration whinges"            0 "!WARNING" "^WARNING: Configuration line \"Lonely\"" fuzz_script.txt whinge
+check "character listed twice still recites"   0 "^\[Enter Fleance\.\]$" "!." dup_character_script.txt
+check "character listed twice whinges"         0 "!WARNING" "^WARNING: Character Banquo in configuration line .* is already listed" dup_character_script.txt whinge
 check "duplicate line whinges"                  0 "!WARNING" "^WARNING: Line 1 is duplicated$" gaps_script.txt whinge
 check "missing lines whinge as a range"         0 "!WARNING" "^WARNING: Lines 2 to 4 are missing$" gaps_script.txt whinge
 check "starting at line 0 is not a gap"         0 -          "!Line 0" gaps_script.txt whinge

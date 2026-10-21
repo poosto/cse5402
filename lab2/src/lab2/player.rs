@@ -93,10 +93,16 @@ impl Player {
     // Return the line number of the player's next line, or None if no lines are left.
     pub fn next_line(&self) -> Option<usize> {
         // map() transforms the inner value of the option, or
-        // returns the contained error (monadic operation)
+        // returns the wrapped T (monadic operation)
         self.lines
             .get(self.line_index)
             .map(|&(line_number, _)| line_number)
+    }
+
+    // Helper method to destructure the first tuple in self.lines
+    // to get the line number without exposing constants.
+    fn first_line_number(&self) -> Option<usize> {
+        self.lines.first().map(|&(num, _)| num)
     }
 }
 
@@ -107,14 +113,12 @@ impl PartialEq for Player {
         (self.lines.is_empty() && other.lines.is_empty())
             || (!self.lines.is_empty()
                 && !other.lines.is_empty()
-                && self.lines[0].0 == other.lines[0].0)
+                && self.first_line_number() == other.first_line_number())
     }
 }
 
-// Marker trait
-// A promise about how PartialEq behaves (reflexivity)
-// There is nothing new to actually implement, and there'd be no other clear return type for
-// PartialEq. Also, this lets generic code require Eq.
+// Eq has no methods to write. It promises that every player is equal to itself,
+// which the PartialEq above keeps. Ord requires Eq, so sorting needs it.
 impl Eq for Player {}
 
 impl PartialOrd for Player {
@@ -124,11 +128,8 @@ impl PartialOrd for Player {
     }
 }
 
-// Ord isn't a marker trait because it carries new info
-// It means something can *always* be ordered, versus sometimes (Option)
-// Whereas PartialEq can always compare two things, but reflexivity doesn't hold.
-// Incomparable or not equal is basically the same thing for equivalence,
-// but for ordering there is a 4th option (not orderable).
+// Ord promises that any two players can always be ordered. PartialOrd only says
+// they sometimes can, which is why it returns an Option. Vec::sort needs Ord.
 impl Ord for Player {
     // Silent players come before players with lines. Players with lines are ordered
     // by their first line number.
@@ -138,7 +139,7 @@ impl Ord for Player {
         } else if (self.lines.is_empty() && !other.lines.is_empty())
             || (!self.lines.is_empty()
                 && !other.lines.is_empty()
-                && self.lines[0].0 < other.lines[0].0)
+                && self.first_line_number() < other.first_line_number())
         {
             cmp::Ordering::Less
         } else {

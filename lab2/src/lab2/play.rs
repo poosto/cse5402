@@ -87,7 +87,7 @@ impl Play {
     fn read_config(script_file: &str, script_config: &mut ScriptConfig) -> Result<(), u8> {
         let mut lines = Vec::<String>::new();
 
-        // a missing configuration file is fatal
+        // a missing script file is fatal
         if grab_trimmed_file_lines(script_file, &mut lines).is_err() {
             eprintln!("ERROR: Failed to read script file {}", script_file);
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
