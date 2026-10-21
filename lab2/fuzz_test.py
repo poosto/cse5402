@@ -219,7 +219,10 @@ def predict(workdir, script_file):
 
 def run(workdir, script_file, whinge):
     argv = [LAB2, script_file] + (["whinge"] if whinge else [])
-    return subprocess.run(argv, cwd=workdir, capture_output=True, timeout=10)
+    # stdout/stderr=PIPE rather than capture_output=True, which needs Python 3.7
+    # (some CEC machines have 3.6)
+    return subprocess.run(argv, cwd=workdir, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, timeout=10)
 
 
 def check(workdir, script_file, whinge):
