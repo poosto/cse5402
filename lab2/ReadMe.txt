@@ -451,19 +451,29 @@ SECTION 3: DEVELOPMENT AND TESTING
 Development stages
 --------------------------------------------------------------------------------
 
-TODO: describe each stage of how you refactored and extended your Lab 1
-solution (the spec asks for this). The stages followed the spec's order:
-  1. Structs: Player and Play replace the Lab 1 tuples and free functions.
-     Whinge output moves to stderr. The program is checked against the Lab 1
-     input files in ../lab1.
-  2. Return Wrapper: main returns a ReturnWrapper, and each exit code is
-     checked with echo $?.
-  3. Scene Fragments: Player gets its ordering traits, the old Play becomes
-     SceneFragment, and a new Play reads a script file of [scene] lines and
-     configuration files, and prints entrances and exits.
-  4. Cleanup: header and function comments, the tie order
-     fix, and the junk-only configuration check.
-Say what you did, and what you checked, at the end of each stage.
+The Lab 1 solution was extended to meet Lab 2's spec by following the
+directions of the new spec in order. The key stages are as follows:
+
+    1. Creating the new Player and Play structs to replace the Lab 1 tuples
+       and free functions. Regression testing was heavily used during this
+       initial refactoring phase, since behavior should have been nearly
+       identical to Lab 1's.
+    2. Creating the ReturnWrapper struct and using the 'inner main' pattern
+       so that I retained the ergonomics of the Result type while still
+       getting custom Termination behavior. Each exit code was verified with
+       echo $?, and regression testing was used to make sure the rest of the
+       program's behavior was identical.
+    3. Creating the scene fragment abstraction. The Player struct implements
+       the ordering traits so that Players can easily be sorted within a
+       SceneFragment. An instance of Play parses a script file to create
+       multiple SceneFragments. Each fragment reads its own config file and
+       makes a Player for each character in it. Everything is ordered such
+       that entrances and exits occur as expected. This was checked by
+       diffing the Hamlet output against hamlet_act_ii_scene_1.txt, and by
+       the recurring cast and tie cases in run_tests.sh.
+    4. Cleaning up the codebase with header and function comments, deleting
+       unused imports, fixing edge cases like ties in ordering [4], and
+       thorough testing and fuzzing [1], [2], [3], [4] (see Testing below).
 
 --------------------------------------------------------------------------------
 File formats used
