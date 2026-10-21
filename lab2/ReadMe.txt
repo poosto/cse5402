@@ -316,7 +316,17 @@ the borrow rules that pushed Play::recite to an index loop.
 SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 ================================================================================
 
-1.  Copy the submitted archive to a CEC Linux Lab machine and unpack it:
+1.  Log in to the CEC shell server with your WUSTL Key username, then move to
+    a dedicated Linux Lab machine with qlogin:
+
+        ssh <username>@shell.cec.wustl.edu
+        qlogin
+
+    The course asks that programs not be compiled on shell.cec.wustl.edu
+    itself, since compiles can be computationally intensive. qlogin gives one
+    core by default. "qlogin -c 2" asks for two.
+
+2.  Copy the submitted archive to a CEC Linux Lab machine and unpack it:
 
         unzip lab2.zip
         cd lab2
@@ -328,7 +338,7 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
     exported Generative AI conversations cited in Section 4, and this
     ReadMe.txt.
 
-2.  Make the course Rust toolchain available:
+3.  Make the course Rust toolchain available:
 
         module add rust-2023
 
@@ -336,14 +346,14 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
         rustc --version
 
-3.  Build the program:
+4.  Build the program:
 
         cargo build
 
     The build completes with no errors and no warnings. The executable is
     written to target/debug/lab2.
 
-4.  Run the program:
+5.  Run the program:
 
         cargo run -q <script_file_name> [whinge]
 
@@ -374,12 +384,12 @@ SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
 
         echo $?
 
-5.  To run the unit tests for Player's ordering traits and for the entrance and
+6.  To run the unit tests for Player's ordering traits and for the entrance and
     exit logic:
 
         cargo test
 
-6.  To run the full regression suite described in Section 3:
+7.  To run the full regression suite described in Section 3:
 
         sh run_tests.sh
 
@@ -614,9 +624,9 @@ Section 2 show the program working.
 How to reproduce
 --------------------------------------------------------------------------------
 
-[meek@ssh-shell-1 lab2]$ module add rust-2023
-[meek@ssh-shell-1 lab2]$ sh run_tests.sh
-    Finished dev [unoptimized + debuginfo] target(s) in 0.21s
+[meek@iht32-1501.sif lab2]$ module add rust-2023
+[meek@iht32-1501.sif lab2]$ sh run_tests.sh
+    Finished dev [unoptimized + debuginfo] target(s) in 0.05s
 PASS  build has no warnings
 PASS  unit tests pass
 
@@ -666,6 +676,7 @@ PASS  part file is a directory
 PASS  part file is not UTF-8
 
 46 passed, 0 failed
+[meek@iht32-1501.sif lab2]$
 
 test_output.txt contains captured output from gen_output.sh: the provided
 Hamlet script, its whinge output on stderr alone, the recurring cast script,
