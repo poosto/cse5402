@@ -181,20 +181,36 @@ Design decisions
 Structs
 --------------------------------------------------------------------------------
 
-TODO: summarize how you refactored the Lab 1 code into the Player and Play
-structs and their implementations, and the design challenges you hit and how
-you solved them. Points you might cover:
-  - Which Lab 1 functions became methods of which struct, and which stayed free
-    functions (grab_trimmed_file_lines moved to declarations.rs).
-  - Why add_script_line takes &mut self rather than mut self.
-  - The String vs &mut str comparison error you hit while writing speak, and
-    why speak takes most_recent_speaker as &mut String.
-  - Why name is pub(crate) while lines and line_index stay private.
-  - Changing the whinge println! calls to eprintln! so whinge output goes to
-    stderr, as the spec now requires.
-  - The usize::MAX overflow and hang that came back during the refactor (see
-    Testing below).
-
+The main difference between Lab 1's and Lab 2's code is that Lab 2 takes
+Lab 1's free functions and turns them into methods and associated functions.
+Through this process, there were several design decisions and challenges:
+  - Any function that did not rely on any state (from &self) but was still
+    associated with a specific type became an associated function. For
+    example, add_config in Play takes in a &mut ScriptConfig that it modifies,
+    and does not need any Play state. In fact, a future consideration would be
+    to make ScriptConfig its own struct with methods rather than a type alias
+    so that add_config could be part of the ScriptConfig type.
+  - Functions that were shared across modules, such as
+    grab_trimmed_file_lines, were moved to declarations.rs to follow this
+    lab's conventions.
+  - When implementing the speak method, I originally took the
+    most_recent_speaker by &mut str. However, a mutable slice cannot be
+    resized. Only its existing data can be mutated. This is analogous to
+    std::span in C++. One option is to point the slice to a new memory region,
+    in which case I'd need a mutable reference to a slice, i.e., &mut &str.
+    However, this is very unidiomatic and brings in a slew of lifetime issues.
+    Thus, the better and far simpler approach was to take in a &mut String
+    directly.
+  - The name field is pub(crate) since SceneFragment needs to access the name
+    field for entering and exiting logic. No other fields of the struct are
+    needed outside its own methods, so the rest stay private.
+  - Any println! statement in whinge mode was replaced with eprintln! to
+    go to stderr instead of stdout.
+  - Originally, a separate warning was printed for every missing line number.
+    However, if there was a huge gap, the program could be stuck printing
+    millions of lines. With a gap up to usize::MAX, that is about 1.8 x 10^19
+    lines, which in practice is a hang. Instead, a single warning is now
+    printed that describes the entire range of missing line numbers [1].
 
 --------------------------------------------------------------------------------
 Return Wrapper
