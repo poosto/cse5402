@@ -249,12 +249,20 @@ in a row, and the design challenges. Points you might cover:
   - Why exits are printed in reverse order (rev() on a DoubleEndedIterator).
   - The blank line rules around titles, entrances, and exits.
 
-TODO: write what you learned about marker traits while implementing
-PartialEq, Eq, PartialOrd, and Ord for Player. For example: Eq has no methods
-because it only promises that PartialEq is reflexive (a == a). Ord adds cmp
-because it returns an Ordering instead of an Option<Ordering>. Floats show the
-difference: NaN != NaN, so f64 is PartialEq but not Eq, and NaN cannot be
-ordered, which is why partial_cmp returns an Option.
+Through this lab assignment, I learned about marker traits, namely Eq. PartialEq
+always returns a boolean, but does not guarantee reflexivity. For example, with
+floats, NaN != NaN. The Eq trait has no actual methods to implement, but it
+means that your PartialEq implementation guarantees reflexivity. This is very
+useful for generic code that works off of trait requirements. Ord is *not* a
+marker trait, unlike Eq. Two things that cannot be compared for equality can
+simply be called unequal, meaning PartialEq and Eq both only have two states
+(true/false). When comparing two things for ordering, there are four possible
+states: less than, greater than, equal to, or incomparable. The Ord trait
+removes the incomparable state, therefore it has a different return type and
+possibly its own logic, so it needs its own method. If you have a struct that
+implements Ord, your PartialOrd implementation can simply be
+Some(Ord::cmp(self, other)). For this project, a Player can always be compared,
+and Player equivalence guarantees reflexivity, so it implements Eq and Ord.
 
 TODO: explain how tied line numbers are handled. Across players, the player
 sorted earlier speaks first, so players tied on their first line keep their
