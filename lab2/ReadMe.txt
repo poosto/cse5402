@@ -746,32 +746,40 @@ Work Claude contributed, all of it reviewed and accepted by me:
 *   The rewritten run_tests.sh, fuzz_test.py, and gen_output.sh for Lab 2, and
     the hand-made input files in test_inputs [1], [2], [3], [4].
 *   The unit tests in player.rs and scene_fragment.rs [2], [4].
-*   The header comments and function summary comments in each file [4].
+*   The header comments and function summary comments in each file,
+    based on my initial header and function comment style [4].
 *   Drafting and editing passes on this ReadMe [5].
 
 --------------------------------------------------------------------------------
 Key prompts and how the interactions fit the workflow
 --------------------------------------------------------------------------------
 
-TODO: update these bullets for Lab 2. The first bullet is about Lab 1. Say how
-much of Lab 2 you wrote before asking for review, and how you used Claude for
-questions while writing (for example the marker trait, ? operator, and borrow
-questions).
-
- -  All of the initial code for the program was written by me. Before I used
-    AI at all, I had a ~95% complete Lab 1 program.
+ -  All of the implementation for this lab assignment was written by me.
+    I used Claude to guide me on what to implement next and to answer
+    syntax or behavior questions I had along the way, such as how
+    marker traits work and if it's possible to implement your own ?
+    operator.
  -  The primary use of Claude was for testing my program and catching any
     edge cases or bugs. Claude is particularly great at scanning the details
     of an assignment (i.e., the Lab 2 instructions), finding inconsistencies,
     developing test cases based on the requirements, discovering strange
     edge cases, etc. I found AI to be extremely useful for this, and the
     vast majority of my key prompts centered around this philosophy.
- -  Claude is also great at determining what is 'idiomatic Rust'. Since it has a
-    ton of training data (textbooks, professional open-source code bases), etc.
-    it is quickly able to deduce if a pattern is well-written or not. This was
-    extremely helpful since I am still learning the best approaches for writing
-    idiomatic Rust programs coming from a primarily C++ background.
- -  Lastly, Claude was *extremely* helpful in creating the write-up: text
+ -  I had more questions about syntax in Lab 2 than I did for Lab 1.
+    For example, I forgot exactly how to make struct fields visible to
+    just the current crate. Furthermore, there were more complex design
+    patterns in this lab like trait implementations and ownership concerns
+    that Claude was great at guiding me through.
+ -  In that same vein, I engineered my prompts such that Claude was 
+    able to enhance my understanding of Rust without just giving me
+    the answer. For example, I wasn't sure about the most idiomatic
+    way to look at the first element of a sequence, and Claude introduced
+    me to peekable iterators. Another great example is the slice pattern
+    matching in play.rs. I knew I wanted to match on different line
+    structures based on the number of words provided, the specific words
+    in the stream, etc. I learned that the best approach is to collect
+    the line into a Vec of word slices and pattern match on that.
+ -  Lastly, Claude was very helpful in creating the write-up: text
     formatting, generating a ReadMe.txt template, filling in the obvious parts,
     leaving blank sections for my own design decisions that I needed to write,
     fixing grammar, making sure I completed all required sections of the

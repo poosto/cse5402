@@ -35,6 +35,7 @@ SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 5402
 ROOT = os.path.dirname(os.path.abspath(__file__))
 USIZE_MAX = 2**64 - 1
 SCENE_DIRECTIVE = "[scene]"
+PROGRESS_EVERY = 200   # random cases between progress lines
 
 # Rust's trim() and split_whitespace() use the Unicode White_Space property,
 # which differs slightly from Python's str.isspace(), so spell it out.
@@ -260,7 +261,10 @@ def check(workdir, script_file, whinge):
         if len(warnings) != len(err_lines):
             return "unexpected non-WARNING stderr on success: %r" % err[:300]
 
-    q = run(workdir, script_file, whinge)
+    try:
+        q = run(workdir, script_file, whinge)
+    except subprocess.TimeoutExpired:
+        return "TIMEOUT on the repeat run (I2)"
     if q.stdout != p.stdout or q.stderr != p.stderr or q.returncode != p.returncode:
         return "nondeterministic output (I7)"
     return None
@@ -401,8 +405,12 @@ def main():
             if problem:
                 failures.append((os.path.join(workdir, script), problem))
 
+    # Progress goes to stderr, and only on a terminal, so a long run does not
+    # look frozen but gen_output.sh's captured output stays the same.
+    show_progress = sys.stderr.isatty()
+
     rng = random.Random(SEED)
-    for _ in range(ITERATIONS):
+    for done in range(1, ITERATIONS + 1):
         workdir = tempfile.mkdtemp(prefix="lab2fuzz")
         case_rng = random.Random(rng.randrange(2**63))
         script = gen_case(case_rng, workdir)
@@ -411,6 +419,9 @@ def main():
             failures.append((workdir, problem))   # keep the directory to reproduce
         else:
             shutil.rmtree(workdir, ignore_errors=True)
+        if show_progress and (done % PROGRESS_EVERY == 0 or done == ITERATIONS):
+            print(f"  {done}/{ITERATIONS} random cases run, {len(failures)} failed",
+                  file=sys.stderr, flush=True)
 
     total = 2 * len(fixed) + ITERATIONS
     print(f"{total - len(failures)}/{total} cases passed "
