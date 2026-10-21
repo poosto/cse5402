@@ -11,10 +11,14 @@ Team members:
 Summary
 --------------------------------------------------------------------------------
 
-TODO: write a short personal summary of how you approached Lab 2, like the
-first paragraph of the Lab 1 ReadMe. For example: how the modular Lab 1 design
-made the move to structs easier or harder, and how much of the code you wrote
-before asking AI for review and testing.
+The approach to this lab was a bit different from Lab 1. Rather than starting
+from a fresh codebase, this lab was about moving existing code to a
+struct-based design instead of many free functions. I followed the spec in
+order and ran the regression tests after finishing major chunks, like a full
+struct implementation. This made sure the behavior matched Lab 1 (except where
+the Lab 2 spec said otherwise) and kept the migration smooth. The Lab 1 code
+was already quite modular, so much of the migration was removing function
+input and output parameters and using some form of self instead.
 
 The program reads a script file. The script file names one or more scene
 fragment configuration files, and its [scene] lines give scene titles. Each
@@ -201,9 +205,9 @@ would bring it down to O(n log c). With only a handful of characters in a scene,
 the simpler scan was kept: it is just as fast in practice, easier to read, and
 follows the spec's description of delivering lines through next_line and speak.
 I didn't run actual benchmarks (because I don't think micro-optimizations are
-the point of this lab...), but I'm curious about the performance difference since
-both are contiguous in memory and should have good cache locality, especially 
-for small c.
+the point of this lab...), but I'm curious about the performance difference
+since both are contiguous in memory and should have good cache locality,
+especially for small c.
 
 --------------------------------------------------------------------------------
 Return Wrapper
@@ -220,10 +224,10 @@ Return Wrapper
     [in stable Rust] for my ReturnWrapper.
     To get around this, all of main's core logic lives in the run() function,
     which returns a regular Result<(), u8>. This means the logic of the
-    main program can use ? to bubble up error codes to the return value of run(),
-    which can be caught *once* by main() and wrapped in a ReturnWrapper. This
-    differs slightly from the spec's wording, but I think this is the more
-    ergonomic approach.
+    main program can use ? to bubble up error codes to the return value of
+    run(), which can be caught *once* by main() and wrapped in a ReturnWrapper.
+    This differs slightly from the spec's wording, but I think this is the
+    more ergonomic approach.
   - I realized that the Termination impl for Result<T, E>
     always returns ExitCode::FAILURE (1 on Linux) for an Err
     since it is meant to work with any error type E, not just a u8,
@@ -729,8 +733,10 @@ Citations
     included as Appendix D
     (ai_transcripts/2026-10-20-145251-lab2-resolve-comment-todos.txt).
 
-TODO: add a citation [5] for the ReadMe chat (October 20, 2026) once its
-transcript is exported to ai_transcripts, plus any later chats.
+[5] Anthropic, October 20, 2026, "Lab 2 ReadMe writeup," [Generative AI
+    chat], Claude Opus 5.5 (Claude Code v2.1.302), exported transcript
+    included as Appendix E
+    (ai_transcripts/2026-10-20-212956-lab2-work-on-writeup.txt).
 
 Code carried over from Lab 1 that Claude helped with (the empty argument
 vector guard in parse_args and the first version of fuzz_test.py and
@@ -779,7 +785,7 @@ Key prompts and how the interactions fit the workflow
     just the current crate. Furthermore, there were more complex design
     patterns in this lab like trait implementations and ownership concerns
     that Claude was great at guiding me through.
- -  In that same vein, I engineered my prompts such that Claude was 
+ -  In that same vein, I engineered my prompts such that Claude was
     able to enhance my understanding of Rust without just giving me
     the answer. For example, I wasn't sure about the most idiomatic
     way to look at the first element of a sequence, and Claude introduced
