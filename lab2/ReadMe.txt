@@ -799,6 +799,11 @@ Citations
     Claude Opus 5.5 (Claude Code v2.1.302), exported transcript included as
     Appendix F (ai_transcripts/2026-10-21-171444-lab2-final-readme.txt).
 
+[7] Anthropic, October 21, 2026, "Lab 2 final scan and fixes," [Generative AI
+    chat], Claude Opus 5.5 (Claude Code v2.1.304), exported transcript
+    included as Appendix G
+    (ai_transcripts/2026-10-21-182754-lab2-final-scan.txt).
+
 Code carried over from Lab 1 that Claude helped with (the empty argument
 vector guard in parse_args and the first version of fuzz_test.py and
 gen_output.sh) is cited in the Lab 1 ReadMe, with its transcripts.
@@ -820,11 +825,19 @@ Work Claude contributed, all of it reviewed and accepted by me:
     player.rs, which I then filled in [2].
 -   The warning messages in Play::add_config [3].
 -   The rewritten run_tests.sh, fuzz_test.py, and gen_output.sh for Lab 2, and
-    the hand-made input files in test_inputs [1], [2], [3], [4].
+    the hand-made input files in test_inputs [1], [2], [3], [4], [7].
+-   A final review of the code and ReadMe against the spec and the course
+    guidelines, which also looked for edge cases [7].
+-   The whinge warning in SceneFragment::add_config for a character listed
+    twice in one configuration file, with its test files and regression cases
+    and the matching change to the fuzzer's model [7].
+-   Rewriting the comments on the Eq and Ord impls in player.rs, and turning
+    the if chain in SceneFragment::recite into a match on line.cmp, as Clippy
+    suggested [7].
 -   The unit tests in player.rs and scene_fragment.rs [2], [4].
 -   The header comments and function summary comments in each file,
     based on my initial header and function comment style [4].
--   Drafting and editing passes on this ReadMe [5], [6].
+-   Drafting and editing passes on this ReadMe [5], [6], [7].
 
 --------------------------------------------------------------------------------
 Key prompts and how the interactions fit the workflow
