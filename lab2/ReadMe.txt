@@ -5,7 +5,7 @@ SECTION 1: IDENTIFICATION AND DESIGN
 CSE 5402 Fall 2025 Lab 2: "They have their exits and their entrances"
 
 Team members:
-* Preston Meek: meek@wustl.edu
+- Preston Meek: meek@wustl.edu
 
 --------------------------------------------------------------------------------
 Summary
@@ -249,7 +249,7 @@ in a row, and the design challenges. Points you might cover:
   - Why exits are printed in reverse order (rev() on a DoubleEndedIterator).
   - The blank line rules around titles, entrances, and exits.
 
-Through this lab assignment, I learned about marker traits, namely Eq. PartialEq
+Through this implementation, I learned about marker traits, namely Eq. PartialEq
 always returns a boolean, but does not guarantee reflexivity. For example, with
 floats, NaN != NaN. The Eq trait has no actual methods to implement, but it
 means that your PartialEq implementation guarantees reflexivity. This is very
@@ -287,30 +287,31 @@ The script file rules the program enforces:
 Insights, observations, and questions
 --------------------------------------------------------------------------------
 
-TODO: add Lab 2 insights and questions. Ideas from your chats: Rust guarantees
-that passing &title to SceneFragment::new and then calling title.clear() is
-safe, which in C++ could leave a dangling reference if the callee kept it, and
-the borrow rules that pushed Play::recite to an index loop.
-
-*   Through testing and securing this program from all possible edge cases, I
-    learned that the 0th argument in argv, the program name, is not required! It
-    is always passed in by [well-behaving] shells, but a bare execve syscall
-    does not require any arguments at all. Therefore, a default program name was
-    added for this [albeit very obscure] edge case.
-*   Why was a single-arm match statement preferred over a destructuring for-loop
-    in both studios and this lab? The compiler warns in these cases and says the
-    syntax can be reduced, and I personally agree that a destructuring for loop
-    looks much cleaner. From what I understand, they should compile down to the
-    same assembly regardless.
-*   The error-handling syntax of Rust is quite enjoyable to work with,
-    especially the ? operator. While I think exceptions have their use cases, I
-    generally prefer to work without them, and Rust obviously agrees with this
-    :). On top of that, being forced to handle every enumeration case with
-    compile-time enforcement makes me feel much better about my code actually
-    working at runtime.
-*   Why were String references preferred over &str? From what I understand, &str
-    is strictly better in these cases as it takes in a generic character slice
-    that does not require string heap allocation.
+-   Rust guarantees that passing &title to SceneFragment::new and calling
+    title.clear() is safe. If the struct stored that reference internally,
+    lifetime annotations would be required and the compiler would not allow
+    a call to title.clear(). This is *not* true in C++, where clearing the
+    title would be completely allowed by the compiler, but would cause
+    undesired behavior at runtime if the class stored the reference. There is
+    no way to know if the class stores the reference itself or [properly]
+    copies it to its own std::string from the call site alone.
+-   Marker traits are a neat way to describe generic enforcements across
+    types. Something like the Eq marker trait does not translate well to C++,
+    since a type satisfies a concept just by having the right operations
+    (structural), rather than by explicitly opting in like a Rust impl block
+    (nominal). This means anything that is Eq rather than just PartialEq
+    would need an opt-in constexpr bool (like enable_borrowed_range in
+    std::ranges) or something similar, which works but is a bit messier.
+-   Why have a new() associated function with no parameters rather than
+    implement the Default trait? From what I understand, Clippy
+    suggests Default so that it can work with generic code.
+-   Why not use an enum for error codes rather than consts? Enums seem more
+    flexible since they can carry different data depending on the error, such
+    as a &str or a u8.
+-   The ReturnWrapper type is a neat design pattern for getting custom
+    behavior when exiting the program! Having an 'inner main' function allows
+    the rest of my code to use regular Result<T, E> types and then have a
+    single mapping point before exiting the program.
 
 ================================================================================
 SECTION 2: BUILDING AND RUNNING ON THE CEC LINUX LAB MACHINES
@@ -739,33 +740,30 @@ gen_output.sh) is cited in the Lab 1 ReadMe, with its transcripts.
 Division of work
 --------------------------------------------------------------------------------
 
-TODO: check this list against your memory and the transcripts, and fix
-anything that is wrong.
-
 I wrote the program: the Player, Play, SceneFragment, and ReturnWrapper structs
 and their methods, the trait implementations, the module layout, and the
 design decisions recorded in Section 1.
 
 Work Claude contributed, all of it reviewed and accepted by me:
 
-*   Changing the whinge println! calls to eprintln! [1].
-*   The one-range-per-gap missing line warning in recite, after testing found
+-   Changing the whinge println! calls to eprintln! [1].
+-   The one-range-per-gap missing line warning in recite, after testing found
     the usize::MAX hang [1].
-*   The empty trait impl scaffold for PartialEq, Eq, PartialOrd, and Ord in
+-   The empty trait impl scaffold for PartialEq, Eq, PartialOrd, and Ord in
     player.rs, which I then filled in [2].
-*   The warning messages in Play::add_config [3].
-*   The rewritten run_tests.sh, fuzz_test.py, and gen_output.sh for Lab 2, and
+-   The warning messages in Play::add_config [3].
+-   The rewritten run_tests.sh, fuzz_test.py, and gen_output.sh for Lab 2, and
     the hand-made input files in test_inputs [1], [2], [3], [4].
-*   The unit tests in player.rs and scene_fragment.rs [2], [4].
-*   The header comments and function summary comments in each file,
+-   The unit tests in player.rs and scene_fragment.rs [2], [4].
+-   The header comments and function summary comments in each file,
     based on my initial header and function comment style [4].
-*   Drafting and editing passes on this ReadMe [5].
+-   Drafting and editing passes on this ReadMe [5].
 
 --------------------------------------------------------------------------------
 Key prompts and how the interactions fit the workflow
 --------------------------------------------------------------------------------
 
- -  All of the implementation for this lab assignment was written by me.
+ -  All of the core implementation for this lab assignment was written by me.
     I used Claude to guide me on what to implement next and to answer
     syntax or behavior questions I had along the way, such as how
     marker traits work and if it's possible to implement your own ?
