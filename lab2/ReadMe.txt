@@ -227,61 +227,49 @@ Return Wrapper
 Scene Fragments
 --------------------------------------------------------------------------------
 
-TODO: summarize how you extended the solution to handle several scene fragments
-in a row, and the design challenges. Points you might cover:
-  - The Lab 1 read_config still took the first line of a configuration file as
-    the title. Lab 2 configuration files have no title line, so the first
-    character was dropped. Titles now come from [scene] lines in the script.
-  - Why Play::recite uses an index loop rather than an iterator (it needs to
-    borrow the previous and next fragments while calling recite on the current
-    one).
-  - How players_not_in matches players by name with a HashSet, and why it
-    cannot use Player's == (all silent players compare equal).
-  - Why exits are printed in reverse order (rev() on a DoubleEndedIterator).
-  - The blank line rules around titles, entrances, and exits.
-
 A core component of Lab 2 was extending Lab 1's functionality to handle
 multiple scene fragments rather than a single configuration file. The core
 of this functionality is in the SceneFragment struct, which was based on
 the original Play struct (which itself was based on Lab 1's implementation).
 Core challenges and design points are as follows:
- - In Lab 1's code, the recite function was part of main.rs and took in
-   an already sorted list of play lines. Now, recite was a method in
-   scene_fragment.rs that only takes &mut self. A SceneFragment contains
-   multiple Players, each of which have their own sorted list of lines
-   (but these lines don't have a total sequential ordering). Thus, the
-   recite method must effectively perform a merge by grabbing the
-   global minimum line number across each Player every iteration.
-- In Lab 1, read_config took the first line of a configuration file as
-  the title. In Lab 2, the title is part of a script config, and individual
-  config files don't contain a title anymore.
-- In Play::recite, I originally tried using iterators in a declarative
-  style to handle calling each SceneFragment's recite method. However,
-  Play::recite needs to borrow the previous and next fragments, and
-  mutably borrow the current fragment. Thus, I would need to use
-  iter_mut(), which means I can't immutably borrow any other SceneFragments
-  during that iterator's lifetime. Thus, indices were the easier approach.
-- I made a SceneFragment::players_not_in helper method to efficiently
-  return the Players in &self but not in &other. This collects the other
-  Player list into a HashSet for O(1) comparisons against &self. Also,
-  note that this is based on the *names* of Players matching rather than
-  their line numbers, so the == operator cannot be used.
-- The players_not_in method returns a DoubleEndedIterator since exits
-  happen in reverse order, which requires rev() to be implemented.
-- The enter_with and exit_with methods carefully handle newlines for
-  different states for visual purposes.
-- The recite method delivers lines by repeatedly scanning every Player's
-next_line for the smallest line number and calling speak on that player, so
-reciting n lines across c characters takes O(n * c) time. Since each player's
-lines are already sorted, this is a c-way merge, and keeping the players' next
-line numbers in a BinaryHeap (pushing back only the player that just spoke)
-would bring it down to O(n log c). With only a handful of characters in a scene,
-the simpler scan was kept: it is just as fast in practice, easier to read, and
-follows the spec's description of delivering lines through next_line and speak.
-I didn't run actual benchmarks (because I don't think micro-optimizations are
-the point of this lab...), but I'm curious about the performance difference
-since both are contiguous in memory and should have good cache locality,
-especially for small c.
+  - In Lab 1's code, the recite function was part of main.rs and took in
+    an already sorted list of play lines. Now, recite is a method in
+    scene_fragment.rs that only takes &mut self. A SceneFragment contains
+    multiple Players, each of which has its own sorted list of lines
+    (but these lines don't have a total sequential ordering). Thus, the
+    recite method must effectively perform a merge by grabbing the
+    global minimum line number across each Player every iteration.
+  - In Lab 1, read_config took the first line of a configuration file as
+    the title. In Lab 2, the title is part of a script config, and individual
+    config files don't contain a title anymore.
+  - In Play::recite, I originally tried using iterators in a declarative
+    style to handle calling each SceneFragment's recite method. However,
+    Play::recite needs to borrow the previous and next fragments, and
+    mutably borrow the current fragment. Thus, I would need to use
+    iter_mut(), which means I can't immutably borrow any other SceneFragments
+    during that iterator's lifetime. So, indices were the easier approach.
+  - I made a SceneFragment::players_not_in helper method to efficiently
+    return the Players in &self but not in &other. This collects the other
+    Player list into a HashSet for O(1) average lookups against &self. Also,
+    note that this is based on the *names* of Players matching rather than
+    their line numbers, so the == operator cannot be used.
+  - The players_not_in method returns a DoubleEndedIterator since exits
+    happen in reverse order, and rev() requires a DoubleEndedIterator.
+  - The enter_with and exit_with methods carefully handle newlines for
+    different states for visual purposes.
+  - The recite method delivers lines by repeatedly scanning every Player's
+    next_line for the smallest line number and calling speak on that player,
+    so reciting n lines across c characters takes O(n * c) time. Since each
+    player's lines are already sorted, this is a c-way merge, and keeping the
+    players' next line numbers in a BinaryHeap (pushing back only the player
+    that just spoke) would bring it down to O(n log c). With only a handful of
+    characters in a scene, I kept the simpler scan: it is just as fast in
+    practice, easier to read, and follows the spec's description of
+    delivering lines through next_line and speak. I didn't run actual
+    benchmarks (because I don't think micro-optimizations are the point of
+    this lab...), but I'm curious about the performance difference since both
+    are contiguous in memory and should have good cache locality, especially
+    for small c.
 
 Through this implementation, I learned about marker traits, namely Eq. PartialEq
 always returns a boolean, but does not guarantee reflexivity. For example, with
