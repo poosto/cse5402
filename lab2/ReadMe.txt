@@ -679,9 +679,13 @@ Section 2 show the program working.
 How to reproduce
 --------------------------------------------------------------------------------
 
-[meek@iht32-1501.sif lab2]$ module add rust-2023
-[meek@iht32-1501.sif lab2]$ sh run_tests.sh
-    Finished dev [unoptimized + debuginfo] target(s) in 0.05s
+[meek@ssh-shell-1 lab2]$ qlogin -c 4
+Requesting a 4 core session:
+Starting environment...4 cores
+[meek@iht32-1503.sif lab2]$ module add rust-2023
+[meek@iht32-1503.sif lab2]$ sh run_tests.sh
+   Compiling lab2 v0.1.0 (/home/compute/meek/git-cse5402/lab2)
+    Finished dev [unoptimized + debuginfo] target(s) in 7.04s
 PASS  build has no warnings
 PASS  unit tests pass
 
@@ -712,6 +716,8 @@ PASS  second [scene] title replaces the first
 PASS  replaced [scene] title is never printed
 PASS  fuzzed configuration still recites
 PASS  fuzzed configuration whinges
+PASS  character listed twice still recites
+PASS  character listed twice whinges
 PASS  duplicate line whinges
 PASS  missing lines whinge as a range
 PASS  starting at line 0 is not a gap
@@ -730,8 +736,8 @@ PASS  missing part file
 PASS  part file is a directory
 PASS  part file is not UTF-8
 
-46 passed, 0 failed
-[meek@iht32-1501.sif lab2]$
+48 passed, 0 failed
+[meek@iht32-1503.sif lab2]$
 
 test_output.txt contains captured output from gen_output.sh: the provided
 Hamlet script, its whinge output on stderr alone, the recurring cast script,
