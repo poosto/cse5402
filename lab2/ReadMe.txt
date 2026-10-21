@@ -785,6 +785,10 @@ Citations
     included as Appendix E
     (ai_transcripts/2026-10-20-212956-lab2-work-on-writeup.txt).
 
+[6] Anthropic, October 21, 2026, "Lab 2 final ReadMe," [Generative AI chat],
+    Claude Opus 5.5 (Claude Code v2.1.302), exported transcript included as
+    Appendix F (ai_transcripts/2026-10-21-171444-lab2-final-readme.txt).
+
 Code carried over from Lab 1 that Claude helped with (the empty argument
 vector guard in parse_args and the first version of fuzz_test.py and
 gen_output.sh) is cited in the Lab 1 ReadMe, with its transcripts.
@@ -810,7 +814,7 @@ Work Claude contributed, all of it reviewed and accepted by me:
 -   The unit tests in player.rs and scene_fragment.rs [2], [4].
 -   The header comments and function summary comments in each file,
     based on my initial header and function comment style [4].
--   Drafting and editing passes on this ReadMe [5].
+-   Drafting and editing passes on this ReadMe [5], [6].
 
 --------------------------------------------------------------------------------
 Key prompts and how the interactions fit the workflow
