@@ -5,6 +5,7 @@
 
 use super::declarations::*;
 use super::player::Player;
+use std::cmp;
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
@@ -166,20 +167,25 @@ impl SceneFragment {
                     if whinge {
                         // a gap is reported once as a range rather than line by line, since
                         // a huge line number could otherwise produce billions of warnings
-                        if line > expected_line {
-                            // line > expected_line >= 0, so line - 1 cannot underflow
-                            let last_missing = line - 1;
+                        match line.cmp(&expected_line) {
+                            cmp::Ordering::Greater => {
+                                // line > expected_line >= 0, so line - 1 cannot underflow
+                                let last_missing = line - 1;
 
-                            if last_missing == expected_line {
-                                eprintln!("WARNING: Line {} is missing", expected_line);
-                            } else {
-                                eprintln!(
-                                    "WARNING: Lines {} to {} are missing",
-                                    expected_line, last_missing
-                                );
+                                if last_missing == expected_line {
+                                    eprintln!("WARNING: Line {} is missing", expected_line);
+                                } else {
+                                    eprintln!(
+                                        "WARNING: Lines {} to {} are missing",
+                                        expected_line, last_missing
+                                    );
+                                }
                             }
-                        } else if line < expected_line {
-                            eprintln!("WARNING: Line {} is duplicated", line);
+                            cmp::Ordering::Less => {
+                                eprintln!("WARNING: Line {} is duplicated", line);
+                            }
+                            // the line is the one expected, so there is nothing to report
+                            cmp::Ordering::Equal => {}
                         }
                     }
 
