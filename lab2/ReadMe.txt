@@ -282,7 +282,6 @@ The script file rules the program enforces:
     read as the configuration file name "[Scene]".
   - A script must name at least one configuration file, and must give a
     [scene] title before its first one. Otherwise it is error code 2.
-TODO: add a sentence on why you chose each of the last rule's two errors.
 
 --------------------------------------------------------------------------------
 Insights, observations, and questions
@@ -432,9 +431,6 @@ then the text of the line.
 --------------------------------------------------------------------------------
 Testing
 --------------------------------------------------------------------------------
-
-TODO: read over this subsection and add, in your own words, a short summary of
-how you tested and which problems mattered most to you.
 
 Testing was done in four layers:
 
@@ -618,8 +614,58 @@ Section 2 show the program working.
 How to reproduce
 --------------------------------------------------------------------------------
 
-TODO: rerun "sh run_tests.sh" on a CEC Linux Lab machine and paste its output
-here. It should end with "46 passed, 0 failed".
+[meek@ssh-shell-1 lab2]$ module add rust-2023
+[meek@ssh-shell-1 lab2]$ sh run_tests.sh
+    Finished dev [unoptimized + debuginfo] target(s) in 0.21s
+PASS  build has no warnings
+PASS  unit tests pass
+
+PASS  no arguments prints usage
+PASS  too many arguments prints usage
+PASS  unrecognized optional argument
+PASS  Hamlet Scene I matches hamlet_act_ii_scene_1.txt
+PASS  full Hamlet script matches expected output
+PASS  Hamlet whinges about line 0 on stderr
+PASS  Hamlet is silent on stderr by default
+PASS  characters exit, re-enter, and titles start scenes
+PASS  same cast twice in a row stays on stage
+PASS  tied line numbers keep config and file order
+PASS  tied line numbers whinge as duplicates
+PASS  Macbeth: lines out of order are sorted
+PASS  Macbeth: silent character enters
+PASS  Macbeth: silent character never speaks
+PASS  blank lines, tabs and extra spaces
+PASS  CRLF script and configuration
+PASS  carriage returns are trimmed
+PASS  numeric edge cases are recited
+PASS  numeric edge cases whinge
+PASS  bare [scene] line is skipped
+PASS  bare [scene] line whinges
+PASS  extra tokens after a config file
+PASS  extra tokens whinge
+PASS  second [scene] title replaces the first
+PASS  replaced [scene] title is never printed
+PASS  fuzzed configuration still recites
+PASS  fuzzed configuration whinges
+PASS  duplicate line whinges
+PASS  missing lines whinge as a range
+PASS  starting at line 0 is not a gap
+PASS  missing script file
+PASS  empty script file
+PASS  script of blank lines
+PASS  script with no configuration files
+PASS  configuration before any [scene] title
+PASS  missing configuration file
+PASS  [Scene] is not the [scene] directive
+PASS  empty configuration file
+PASS  configuration of only malformed lines
+PASS  malformed-only configuration whinges
+PASS  malformed-only configuration is quiet
+PASS  missing part file
+PASS  part file is a directory
+PASS  part file is not UTF-8
+
+46 passed, 0 failed
 
 test_output.txt contains captured output from gen_output.sh: the provided
 Hamlet script, its whinge output on stderr alone, the recurring cast script,
