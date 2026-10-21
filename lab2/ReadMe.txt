@@ -209,20 +209,28 @@ for small c.
 Return Wrapper
 --------------------------------------------------------------------------------
 
-TODO: summarize how you implemented and used the return wrapper, and the
-design challenges. Points you might cover:
   - ReturnWrapper has one u8 field. ReturnWrapper::new turns Ok into 0 and
     keeps an Err's code. report prints "Error: N" to stderr when N is not 0,
-    then returns ExitCode::from(N).
-  - The run() design choice: main's logic lives in run() -> Result<(), u8> so
-    it can use ?. The ? operator cannot return a ReturnWrapper on stable Rust,
-    because the Try and FromResidual traits are unstable. So main wraps run()'s
-    single Result with ReturnWrapper::new, instead of unwrapping and rewrapping
-    each Ok and Err. This differs a little from the spec's wording ("wrap each
-    Result expression returned by main").
-  - Your question about returning std::process::ExitCode directly, and why
-    Rust's Termination impl for Result prints the Debug form of the error.
-  - Checking each exit code with echo $? (0, 1, and 2, see Testing).
+    then returns ExitCode::from(N) in both cases. ExitCode::from(0) is
+    effectively a success code.
+  - When adding the ReturnWrapper, I noticed a lot of boilerplate from bubbling
+    up the Err values and unwrapping the Ok values. This is exactly what the
+    question mark operator (?) solves, but it only works for core
+    types like Result<T, E> and Option<T>. There is no way to implement it
+    [in stable Rust] for my ReturnWrapper.
+    To get around this, all of main's core logic lives in the run() function,
+    which returns a regular Result<(), u8>. This means the logic of the
+    main program can use ? to bubble up error codes to the return value of run(),
+    which can be caught *once* by main() and wrapped in a ReturnWrapper. This
+    differs slightly from the spec's wording, but I think this is the more
+    ergonomic approach.
+  - I realized that the Termination impl for Result<T, E>
+    always returns ExitCode::FAILURE (1 on Linux) for an Err
+    since it is meant to work with any error type E, not just a u8,
+    so it can't reliably return E. It uses debug printing ({:?}) to print
+    out the error in the "Error: {:?}" message.
+  - Exit codes were verified using echo $?. See the Testing section for
+    more details.
 
 --------------------------------------------------------------------------------
 Scene Fragments
