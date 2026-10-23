@@ -193,6 +193,31 @@ impl Customer {
     }
 }
 
+#[derive(Default)]
+struct Chef {
+    handle: Option<thread::JoinHandle<()>>,
+}
+
+impl Chef {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn activate(&mut self) {
+        if self.handle.is_none() {
+            self.handle = Some(thread::spawn(|| {
+                println!("Ready for orders!");
+            }))
+        }
+    }
+
+    fn finish(&mut self) {
+        if let Some(handle) = self.handle.take() {
+            handle.join().expect("Unable to join thread");
+        }
+    }
+}
+
 fn main() {
     const NUM_WAITERS: usize = 4;
     const NUM_TABLES_PER_WAITER: usize = 5;
@@ -212,11 +237,15 @@ fn main() {
     let arc_waiters: [Arc<Mutex<Waiter>>; NUM_WAITERS] =
         waiters.map(|waiter| Arc::new(Mutex::new(waiter)));
 
+    let chef = Arc::new(Mutex::new(Chef::new()));
+    chef.lock().expect("Poisoned mutex").activate();
+
     arc_waiters.iter().for_each(|aw| aw.activate());
 
     arc_waiters.iter().for_each(|aw| {
         aw.finish().expect("Unable to join threads");
     });
+    chef.lock().expect("Poisoned mutex").finish();
 
     println!("Closing time!");
 }

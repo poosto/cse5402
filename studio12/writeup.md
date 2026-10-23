@@ -328,5 +328,94 @@ OrderItem { table_number: 19, seat_number: 5, food_order: Yams, order_status: Or
 Closing time!
 ```
 
-5) 
+5) *Compile and run your code, and as the answer to this question please show the output that was produced by the chef
+object.*
+```shell
+Ready for orders!
+Welcome to AO's place!
+Welcome to AO's place!
+Welcome to AO's place!
+OrderItem { table_number: 10, seat_number: 0, food_order: Salad, order_status: Ordered }
+Welcome to AO's place!
+OrderItem { table_number: 5, seat_number: 0, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 5, seat_number: 1, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 5, seat_number: 2, food_order: Chicken, order_status: Ordered }
+OrderItem { table_number: 5, seat_number: 3, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 6, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 6, seat_number: 1, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 6, seat_number: 2, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 6, seat_number: 3, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 6, seat_number: 4, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 7, seat_number: 0, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 7, seat_number: 1, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 0, seat_number: 0, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 10, seat_number: 1, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 10, seat_number: 2, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 10, seat_number: 3, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 7, seat_number: 2, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 7, seat_number: 3, food_order: Spinach, order_status: Ordered }
+OrderItem { table_number: 7, seat_number: 4, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 8, seat_number: 0, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 8, seat_number: 1, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 8, seat_number: 2, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 9, seat_number: 0, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 9, seat_number: 1, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 9, seat_number: 2, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 0, seat_number: 1, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 0, seat_number: 2, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 0, seat_number: 3, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 0, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 1, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 2, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 3, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 4, food_order: Spinach, order_status: Ordered }
+OrderItem { table_number: 1, seat_number: 5, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 2, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 2, seat_number: 1, food_order: Chicken, order_status: Ordered }
+OrderItem { table_number: 2, seat_number: 2, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 2, seat_number: 3, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 0, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 1, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 2, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 3, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 4, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 3, seat_number: 5, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 4, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 4, seat_number: 1, food_order: Spinach, order_status: Ordered }
+OrderItem { table_number: 4, seat_number: 2, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 4, seat_number: 3, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 1, food_order: Spinach, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 2, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 3, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 4, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 15, seat_number: 5, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 16, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 16, seat_number: 1, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 0, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 1, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 2, food_order: Chicken, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 3, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 4, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 17, seat_number: 5, food_order: Salad, order_status: Ordered }
+OrderItem { table_number: 18, seat_number: 0, food_order: Chicken, order_status: Ordered }
+OrderItem { table_number: 18, seat_number: 1, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 18, seat_number: 2, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 18, seat_number: 3, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 19, seat_number: 0, food_order: Noodles, order_status: Ordered }
+OrderItem { table_number: 19, seat_number: 1, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 19, seat_number: 2, food_order: Spinach, order_status: Ordered }
+OrderItem { table_number: 19, seat_number: 3, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 19, seat_number: 4, food_order: Chicken, order_status: Ordered }
+OrderItem { table_number: 10, seat_number: 4, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 11, seat_number: 0, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 11, seat_number: 1, food_order: Yams, order_status: Ordered }
+OrderItem { table_number: 11, seat_number: 2, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 12, seat_number: 0, food_order: Carrots, order_status: Ordered }
+OrderItem { table_number: 12, seat_number: 1, food_order: Asparagus, order_status: Ordered }
+OrderItem { table_number: 13, seat_number: 0, food_order: Coleslaw, order_status: Ordered }
+OrderItem { table_number: 13, seat_number: 1, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 14, seat_number: 0, food_order: Fish, order_status: Ordered }
+OrderItem { table_number: 14, seat_number: 1, food_order: Coleslaw, order_status: Ordered }
+Closing time!
 ```
