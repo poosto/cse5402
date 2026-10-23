@@ -18,6 +18,6 @@ Welcome to AO's place!
 Closing time!
 ```
 
-4) *Compile and run your code, and as the answer to this question please show the output that was produced.*
-
+4) *Compile and run your code, and as the answer to this question please show the output that was produced.* \
+Note that `Customer::order` was changed to `Customer::` 
 ```
