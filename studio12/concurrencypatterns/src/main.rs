@@ -45,7 +45,7 @@ impl WaiterHandle for Arc<Mutex<Waiter>> {
 
         if guard.handle.is_none() {
             guard.handle = Some(thread::spawn(move || {
-                let mut guard = thread_waiter.lock().expect("Poisoned mutex");
+                let guard = thread_waiter.lock().expect("Poisoned mutex");
 
                 println!("Welcome to AO's place!");
 
@@ -53,7 +53,15 @@ impl WaiterHandle for Arc<Mutex<Waiter>> {
                     table.customers.iter().for_each(|customer| {
                         customer.order(&guard);
                     });
-                })
+                });
+
+                guard.tables.iter().for_each(|table| {
+                    table.customers.iter().for_each(|customer| {
+                        customer.order_items.borrow().iter().for_each(|item| {
+                            println!("{:?}", item);
+                        });
+                    });
+                });
             }))
         }
     }
@@ -164,6 +172,9 @@ impl OrderItem {
 struct Customer {
     table_number: usize,
     seat_number: usize,
+    // Interior mutability so that we don't need multiple mutable borrows
+    // This is particularly because of Customer::order, which needed a &mut Waiter,
+    // but to get the Customer out, you needed to borrow Waiter.
     order_items: RefCell<Vec<OrderItem>>,
 }
 
