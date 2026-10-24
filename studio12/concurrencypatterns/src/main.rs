@@ -1,6 +1,8 @@
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use std::cell::RefCell;
+use std::collections::{HashMap, VecDeque};
+use std::sync::mpsc;
 use std::{
     sync::{Arc, Mutex},
     thread,
@@ -32,12 +34,12 @@ struct Waiter {
 }
 
 trait WaiterHandle {
-    fn activate(&self);
+    fn activate(&self, restaurant: Arc<Restaurant>);
     fn finish(&self) -> thread::Result<()>;
 }
 
 impl WaiterHandle for Arc<Mutex<Waiter>> {
-    fn activate(&self) {
+    fn activate(&self, restaurant: Arc<Restaurant>) {
         let mut guard = self.lock().expect("Poisoned mutex");
 
         // Create an Arc clone to move into the handle
@@ -57,9 +59,15 @@ impl WaiterHandle for Arc<Mutex<Waiter>> {
 
                 guard.tables.iter().for_each(|table| {
                     table.customers.iter().for_each(|customer| {
-                        customer.order_items.borrow().iter().for_each(|item| {
-                            println!("{:?}", item);
-                        });
+                        customer
+                            .order_items
+                            .borrow_mut()
+                            // drain(..) steals all orders from the
+                            // customer and sends them to the chef
+                            .drain(..)
+                            .for_each(|item| {
+                                restaurant.chef.lock().expect("Poisoned mutex").order(item);
+                            });
                     });
                 });
             }))
@@ -193,20 +201,48 @@ impl Customer {
     }
 }
 
-#[derive(Default)]
 struct Chef {
     handle: Option<thread::JoinHandle<()>>,
+    tx: mpsc::Sender<WorkItem>,
+    rx: Option<mpsc::Receiver<WorkItem>>,
 }
 
 impl Chef {
     fn new() -> Self {
-        Self::default()
+        let (tx, rx) = mpsc::channel();
+
+        Self {
+            handle: None,
+            tx,
+            rx: Some(rx),
+        }
+    }
+
+    fn order(&self, order_item: OrderItem) {
+        let work_item = WorkItem::Process(order_item);
+        self.tx.send(work_item).unwrap();
+    }
+
+    fn quit(&self) {
+        self.tx.send(WorkItem::Quit).unwrap();
     }
 
     fn activate(&mut self) {
         if self.handle.is_none() {
-            self.handle = Some(thread::spawn(|| {
+            let rx = self.rx.take().unwrap();
+
+            self.handle = Some(thread::spawn(move || {
                 println!("Ready for orders!");
+
+                for item in rx {
+                    match item {
+                        WorkItem::Quit => return,
+                        WorkItem::Process(mut order_item) => {
+                            order_item.order_status = Status::Ready;
+                            println!("{:?}", order_item);
+                        }
+                    };
+                }
             }))
         }
     }
@@ -214,6 +250,37 @@ impl Chef {
     fn finish(&mut self) {
         if let Some(handle) = self.handle.take() {
             handle.join().expect("Unable to join thread");
+        }
+    }
+}
+
+enum WorkItem {
+    Quit,
+    Process(OrderItem),
+}
+
+struct Restaurant {
+    chef: Arc<Mutex<Chef>>,
+    waiters: Vec<Arc<Mutex<Waiter>>>,
+    table_to_waiter: HashMap<usize, Arc<Mutex<Waiter>>>,
+    leader_queue: Mutex<VecDeque<Arc<Mutex<Waiter>>>>,
+}
+
+impl Restaurant {
+    fn new(chef: Arc<Mutex<Chef>>, waiters: Vec<Arc<Mutex<Waiter>>>) -> Self {
+        let mut table_to_waiter = HashMap::new();
+
+        for w in &waiters {
+            for t in &w.lock().expect("Poisoned mutex").tables {
+                table_to_waiter.insert(t.number, Arc::clone(w));
+            }
+        }
+
+        Self {
+            chef,
+            waiters,
+            table_to_waiter,
+            leader_queue: Mutex::new(VecDeque::new()),
         }
     }
 }
@@ -234,18 +301,13 @@ fn main() {
         }
     }
 
-    let arc_waiters: [Arc<Mutex<Waiter>>; NUM_WAITERS] =
-        waiters.map(|waiter| Arc::new(Mutex::new(waiter)));
+    let arc_waiters: Vec<Arc<Mutex<Waiter>>> = waiters
+        .map(|waiter| Arc::new(Mutex::new(waiter)))
+        .into_iter()
+        .collect();
 
     let chef = Arc::new(Mutex::new(Chef::new()));
-    chef.lock().expect("Poisoned mutex").activate();
-
-    arc_waiters.iter().for_each(|aw| aw.activate());
-
-    arc_waiters.iter().for_each(|aw| {
-        aw.finish().expect("Unable to join threads");
-    });
-    chef.lock().expect("Poisoned mutex").finish();
+    let restaurant = Arc::new(Restaurant::new(chef, arc_waiters));
 
     println!("Closing time!");
 }
