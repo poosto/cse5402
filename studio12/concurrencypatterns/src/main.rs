@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc;
 use std::{
-    sync::{Arc, Mutex},
+    sync::{Arc, Condvar, Mutex},
     thread,
 };
 
@@ -27,10 +27,11 @@ impl Table {
     }
 }
 
-#[derive(Default)]
 struct Waiter {
     handle: Option<thread::JoinHandle<()>>,
     tables: Vec<Table>,
+    tx: mpsc::Sender<WorkItem>,
+    rx: Option<mpsc::Receiver<WorkItem>>,
 }
 
 trait WaiterHandle {
@@ -46,30 +47,63 @@ impl WaiterHandle for Arc<Mutex<Waiter>> {
         let thread_waiter = self.clone();
 
         if guard.handle.is_none() {
+            let rx = guard.rx.take().expect("Waiter already activated");
+
             guard.handle = Some(thread::spawn(move || {
-                let guard = thread_waiter.lock().expect("Poisoned mutex");
+                let ordered = {
+                    let guard = thread_waiter.lock().expect("Poisoned mutex");
 
-                println!("Welcome to AO's place!");
+                    println!("Welcome to AO's place!");
 
-                guard.tables.iter().for_each(|table| {
-                    table.customers.iter().for_each(|customer| {
-                        customer.order(&guard);
+                    guard.tables.iter().for_each(|table| {
+                        table.customers.iter().for_each(|customer| {
+                            customer.order(&guard);
+                        });
                     });
-                });
 
-                guard.tables.iter().for_each(|table| {
-                    table.customers.iter().for_each(|customer| {
-                        customer
-                            .order_items
-                            .borrow_mut()
-                            // drain(..) steals all orders from the
-                            // customer and sends them to the chef
-                            .drain(..)
-                            .for_each(|item| {
-                                restaurant.chef.lock().expect("Poisoned mutex").order(item);
-                            });
+                    let mut count = 0;
+                    guard.tables.iter().for_each(|table| {
+                        table.customers.iter().for_each(|customer| {
+                            customer
+                                .order_items
+                                .borrow_mut()
+                                .drain(..)
+                                .for_each(|item| {
+                                    restaurant.chef.lock().expect("Poisoned mutex").order(item);
+                                    count += 1;
+                                });
+                        });
                     });
-                });
+
+                    count
+                };
+
+                restaurant.move_to_back(&thread_waiter);
+
+                let mut served = 0;
+                let mut got_quit = false;
+
+                while !(got_quit && served == ordered) {
+                    match rx.recv().expect("Channel closed") {
+                        WorkItem::Quit => got_quit = true,
+
+                        WorkItem::Process(mut item) => {
+                            let owner = &restaurant.table_to_waiter[&item.table_number];
+
+                            if Arc::ptr_eq(owner, &thread_waiter) {
+                                restaurant.move_to_back(&thread_waiter);
+                                item.order_status = Status::Served;
+                                println!("{:?}", item);
+                                served += 1;
+                            } else {
+                                owner
+                                    .lock()
+                                    .expect("Poisoned mutex")
+                                    .pickup(WorkItem::Process(item));
+                            }
+                        }
+                    }
+                }
             }))
         }
     }
@@ -93,7 +127,23 @@ impl WaiterHandle for Arc<Mutex<Waiter>> {
 
 impl Waiter {
     fn new() -> Self {
-        Self::default()
+        let (tx, rx) = mpsc::channel();
+        Self {
+            handle: None,
+            tables: Vec::new(),
+            tx,
+            rx: Some(rx),
+        }
+    }
+
+    fn pickup(&self, work: WorkItem) {
+        self.tx.send(work).expect("Waiter thread has stopped");
+    }
+
+    fn quit(&self) {
+        self.tx
+            .send(WorkItem::Quit)
+            .expect("Waiter thread has stopped");
     }
 
     fn assign(&mut self, table: Table) {
@@ -264,6 +314,7 @@ struct Restaurant {
     waiters: Vec<Arc<Mutex<Waiter>>>,
     table_to_waiter: HashMap<usize, Arc<Mutex<Waiter>>>,
     leader_queue: Mutex<VecDeque<Arc<Mutex<Waiter>>>>,
+    queue_changed: Condvar,
 }
 
 impl Restaurant {
@@ -281,7 +332,44 @@ impl Restaurant {
             waiters,
             table_to_waiter,
             leader_queue: Mutex::new(VecDeque::new()),
+            queue_changed: Condvar::new(),
         }
+    }
+
+    // Get the Waiter at the front of the queue
+    fn leader(&self) -> Arc<Mutex<Waiter>> {
+        let q = self
+            .queue_changed
+            .wait_while(self.leader_queue.lock().expect("Poisoned mutex"), |q| {
+                q.is_empty()
+            })
+            .expect("Poisoned mutex");
+
+        Arc::clone(q.front().unwrap())
+    }
+
+    // Move some Waiter to back of the queue
+    fn move_to_back(&self, w: &Arc<Mutex<Waiter>>) {
+        let mut q = self.leader_queue.lock().expect("Poisoned mutex");
+
+        // Remove from queue if it already is there
+        if let Some(pos) = q.iter().position(|x| Arc::ptr_eq(x, w)) {
+            q.remove(pos);
+        }
+
+        q.push_back(Arc::clone(w));
+
+        self.queue_changed.notify_all();
+    }
+
+    // Waits for every waiter to be in the leader queue
+    fn wait_all_in_queue(&self) {
+        let _q = self
+            .queue_changed
+            .wait_while(self.leader_queue.lock().expect("Poisoned mutex"), |q| {
+                q.len() < self.waiters.len()
+            })
+            .expect("Poisoned mutex");
     }
 }
 
