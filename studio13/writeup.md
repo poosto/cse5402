@@ -353,4 +353,124 @@ matches the spec.
 
 6) *Compile and run your program, and verify that it produced similar output to exercise 7 of the previous studio. As
 the answer to this exercise, please say whether you steered and briefly explain why you steered or didn't steer.*
+```shell
+Ready for orders!
+Welcome to AO's place!
+Welcome to AO's place!
+Welcome to AO's place!
+Welcome to AO's place!
+table: 1, seat: 1, food: Salad, status: Served
+table: 1, seat: 2, food: Salad, status: Served
+table: 16, seat: 1, food: Fish, status: Served
+table: 1, seat: 3, food: Noodles, status: Served
+table: 11, seat: 1, food: Chicken, status: Served
+table: 6, seat: 1, food: Noodles, status: Served
+table: 1, seat: 4, food: Spinach, status: Served
+table: 1, seat: 5, food: Noodles, status: Served
+table: 1, seat: 6, food: Salad, status: Served
+table: 11, seat: 2, food: Spinach, status: Served
+table: 11, seat: 3, food: Fish, status: Served
+table: 11, seat: 4, food: Fish, status: Served
+table: 11, seat: 5, food: Salad, status: Served
+table: 11, seat: 6, food: Carrots, status: Served
+table: 12, seat: 1, food: Asparagus, status: Served
+table: 12, seat: 2, food: Noodles, status: Served
+table: 2, seat: 1, food: Chicken, status: Served
+table: 16, seat: 2, food: Coleslaw, status: Served
+table: 2, seat: 2, food: Carrots, status: Served
+table: 12, seat: 3, food: Salad, status: Served
+table: 12, seat: 4, food: Salad, status: Served
+table: 12, seat: 5, food: Salad, status: Served
+table: 12, seat: 6, food: Carrots, status: Served
+table: 16, seat: 3, food: Coleslaw, status: Served
+table: 16, seat: 4, food: Coleslaw, status: Served
+table: 16, seat: 5, food: Chicken, status: Served
+table: 16, seat: 6, food: Spinach, status: Served
+table: 17, seat: 1, food: Fish, status: Served
+table: 13, seat: 1, food: Yams, status: Served
+table: 2, seat: 3, food: Fish, status: Served
+table: 17, seat: 2, food: Yams, status: Served
+table: 13, seat: 2, food: Fish, status: Served
+table: 13, seat: 3, food: Asparagus, status: Served
+table: 13, seat: 4, food: Coleslaw, status: Served
+table: 2, seat: 4, food: Yams, status: Served
+table: 18, seat: 1, food: Fish, status: Served
+table: 19, seat: 3, food: Asparagus, status: Served
+table: 19, seat: 4, food: Chicken, status: Served
+table: 20, seat: 1, food: Noodles, status: Served
+table: 20, seat: 2, food: Chicken, status: Served
+table: 13, seat: 5, food: Coleslaw, status: Served
+table: 20, seat: 3, food: Fish, status: Served
+table: 19, seat: 1, food: Asparagus, status: Served
+table: 3, seat: 1, food: Fish, status: Served
+table: 3, seat: 2, food: Asparagus, status: Served
+table: 3, seat: 3, food: Salad, status: Served
+table: 3, seat: 4, food: Asparagus, status: Served
+table: 3, seat: 5, food: Yams, status: Served
+table: 13, seat: 6, food: Carrots, status: Served
+table: 3, seat: 6, food: Chicken, status: Served
+table: 4, seat: 1, food: Noodles, status: Served
+table: 4, seat: 2, food: Spinach, status: Served
+table: 4, seat: 3, food: Noodles, status: Served
+table: 19, seat: 2, food: Coleslaw, status: Served
+table: 14, seat: 1, food: Noodles, status: Served
+table: 18, seat: 2, food: Chicken, status: Served
+table: 5, seat: 1, food: Chicken, status: Served
+table: 14, seat: 2, food: Spinach, status: Served
+table: 5, seat: 2, food: Noodles, status: Served
+table: 14, seat: 3, food: Yams, status: Served
+table: 14, seat: 4, food: Noodles, status: Served
+table: 15, seat: 1, food: Noodles, status: Served
+table: 15, seat: 2, food: Salad, status: Served
+table: 15, seat: 3, food: Salad, status: Served
+table: 18, seat: 3, food: Yams, status: Served
+table: 6, seat: 2, food: Yams, status: Served
+table: 6, seat: 3, food: Salad, status: Served
+table: 6, seat: 4, food: Spinach, status: Served
+table: 7, seat: 1, food: Spinach, status: Served
+table: 15, seat: 4, food: Carrots, status: Served
+table: 5, seat: 3, food: Spinach, status: Served
+table: 7, seat: 2, food: Coleslaw, status: Served
+table: 5, seat: 4, food: Spinach, status: Served
+table: 7, seat: 3, food: Carrots, status: Served
+table: 7, seat: 4, food: Carrots, status: Served
+table: 7, seat: 5, food: Chicken, status: Served
+table: 8, seat: 1, food: Noodles, status: Served
+table: 15, seat: 5, food: Asparagus, status: Served
+table: 18, seat: 4, food: Spinach, status: Served
+table: 18, seat: 5, food: Chicken, status: Served
+table: 8, seat: 2, food: Salad, status: Served
+table: 8, seat: 3, food: Spinach, status: Served
+table: 8, seat: 4, food: Salad, status: Served
+table: 8, seat: 5, food: Fish, status: Served
+table: 9, seat: 1, food: Chicken, status: Served
+table: 9, seat: 2, food: Spinach, status: Served
+table: 9, seat: 3, food: Chicken, status: Served
+table: 9, seat: 4, food: Carrots, status: Served
+table: 9, seat: 5, food: Noodles, status: Served
+table: 10, seat: 1, food: Fish, status: Served
+table: 10, seat: 2, food: Noodles, status: Served
+table: 10, seat: 3, food: Coleslaw, status: Served
+table: 10, seat: 4, food: Carrots, status: Served
+Closing time!
+```
+Same as Questions 4 and 5. The output is identical to my completed Studio 12. Claude was able to use the existing
+context and did not need any steering.
 
+7) *Compile and run your program. As the answer to this exercise, please say whether you steered and briefly explain why
+you steered or didn't steer.* \
+I did not need to steer for the MPMC addition. Claude stress-tested the new implementation and made sure the code
+behaved as-intended. I verified the output of my program and it matched that of Question 6, which is expected since the
+high-level behavior is identical.
+
+### AI Usage and Citations
+This section documents my use of Generative AI as required by the CSE 5402 Generative AI Use Policy. Claude Code does
+not support public link sharing of a conversation, so each session is exported in full and included with this
+submission as an appendix.
+
+[1] Anthropic, October 25, 2026, "Studio 13 unattended one-shot restaurant," [Generative AI chat], Claude Opus 5.5
+(Claude Code v2.1.307), exported transcript included as Appendix A (`restaurant/ai_transcripts/q3.txt`).
+
+[2] Anthropic, October 25, 2026, "Studio 13 attended Active Object, Half-Sync/Half-Async, Leader/Followers, and
+MPMC chefs," [Generative AI chat], Claude Opus 5.5 (Claude Code v2.1.310), exported transcript included as Appendix B
+(`attended/ai_transcripts/q4-7.txt`).
