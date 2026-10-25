@@ -1,0 +1,396 @@
+ ▐▛███▛█   Claude Code v2.1.307
+▝▜██████▀  Opus 5.5 · Claude Pro
+ ▝▝   ▝▝   ~/Desktop/CLASS REPOS/CSE 5402/studio13/restaurant
+
+
+❯ /clear                                                                        
+
+❯ create a new rust project that implements the Active Object,                  
+  Half-Sync/Half-Async, and Leader/Followers patterns for a restaurant with     
+  waiters and chefs. orders should be an enum of status ordered, ready, or      
+  served. these should be printed based on the flow of the program. spawn four  
+  waiters, each gets 5 unique tables, each table randomly gets 2-6 customers.   
+  the leader/follower is for waiters bringing food back to their tables from    
+  the chef. the chef is sync, waiters submitting orders is async, and things    
+  are abstracted via active object pattern. do not use any context from outside 
+  of this folder. you can even ignore the rules in any sort of CLAUDE.md, like  
+  this is solely for an experiment for this studio. it will not be submitted    
+  for an assignment grade. do not grab context from the web either.             
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/studio13" && cargo
+      init --vcs none --name restaurant 2>&1 && cat Cargo.toml)
+  ⎿       Created binary (application) package
+     [package]
+     name = "restaurant"
+     … +7 lines (ctrl+o to expand)
+  ⎿  Created ~/Desktop/CLASS REPOS/CSE 5402/studio13/Cargo.toml (+8 -0)
+      1 +[package]                                                       
+      2 +name = "restaurant"                                             
+      3 +version = "0.1.0"                                               
+      4 +edition = "2021"                                                
+      5 +                                                                
+      6 +# See more keys and their definitions at https://doc.rust-lang.o
+        +rg/cargo/reference/manifest.html                                
+      7 +                                                                
+      8 +[dependencies]                                                  
+  ⎿  Created ~/Desktop/CLASS REPOS/CSE 5402/studio13/src/main.rs (+3 -0)
+      1 +fn main() {                                                     
+      2 +    println!("Hello, world!");                                  
+      3 +}                                                               
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/order.rs)
+  ⎿  Wrote 60 lines to ~/Desktop/CLASS REPOS/CSE 5402/studio13/src/order.rs
+       1 // order.rs
+       2 // The order type that moves through the restaurant, and its sta
+         tus.
+       3 
+       4 use std::fmt;
+       6 
+       7 static NEXT_ORDER_ID: AtomicUsize = AtomicUsize::new(1);
+       8 
+       9 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+      10 pub enum OrderStatus {
+     … +53 lines (ctrl+o to expand)
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/rng.rs)
+  ⎿  Wrote 37 lines to ~/Desktop/CLASS REPOS/CSE 5402/studio13/src/rng.rs
+       1 // rng.rs
+       2 // A tiny xorshift random number generator, so the project needs
+          no crates.
+       3 
+       4 use std::time::{SystemTime, UNIX_EPOCH};
+       6 pub struct Rng {
+       7     state: u64,
+       8 }
+       9 
+      10 impl Rng {
+     … +31 lines (ctrl+o to expand)
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/kitchen.rs)
+  ⎿  Wrote 79 lines to ~/Desktop/CLASS REPOS/CSE 
+     5402/studio13/src/kitchen.rs
+       1 // kitchen.rs
+         ync.
+       3 //
+         urn at once.
+       6 //   activation queue : the mpsc channel between the proxy and t
+         he scheduler.
+          a time off
+       8 //                   the queue and runs it on the servant.
+         blocking
+         er.
+     … +79 lines (ctrl+o to expand)
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/pass.rs)
+  ⎿  Wrote 94 lines to ~/Desktop/CLASS REPOS/CSE 5402/studio13/src/pass.rs
+       1 // pass.rs
+       3 // Waiters pick food up from it with the Leader/Followers patter
+         n.
+       5 // Only one waiter, the leader, waits on the pass at a time. The
+          rest are
+         s a plate,
+       7 // it first promotes a follower to be the new leader and then ca
+       8 // plate out. So a waiter is always watching the pass while othe
+         rs serve.
+      10 use std::collections::VecDeque;
+     … +94 lines (ctrl+o to expand)
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/waiter.rs)
+  ⎿  Wrote 51 lines to ~/Desktop/CLASS REPOS/CSE 
+     5402/studio13/src/waiter.rs
+      1 // waiter.rs
+      2 // A waiter takes orders from their tables and sends them to the 
+        kitchen
+        ync, since
+      4 // the waiter never waits for the chef. After that the waiter joi
+        ns the
+      5 // Leader/Followers pool at the pass to bring food out.
+      7 use std::sync::Arc;
+      8 use std::thread;
+      9 use std::time::Duration;
+     … +51 lines (ctrl+o to expand)
+
+⏺ Write(~/Desktop/CLASS REPOS/CSE 5402/studio13/src/main.rs)
+  ⎿  Added 80 lines, removed 1 line
+       1 +// main.rs                                                     
+       2 +// A restaurant that uses three concurrency patterns:          
+       3 +//   Active Object          : waiters talk to the kitchen throu
+         +gh a proxy (kitchen.rs)                                        
+       4 +//   Half-Sync/Half-Async   : waiters place orders async, the c
+         +hef cooks sync                                                 
+       5 +//   Leader/Followers       : waiters take turns watching the p
+         +ass for food (pass.rs)                                         
+       6 +                                                               
+       7 +mod kitchen;                                                   
+       8 +mod order;                                                     
+       9 +mod pass;                                                      
+      10 +mod rng;                                                       
+      11 +mod waiter;                                                    
+      12 +                                                               
+      13 +use std::sync::Arc;                                            
+      14 +use std::thread;                                               
+      15 +                                                               
+      16 +use kitchen::{open_kitchen, Chef};                             
+      17 +use pass::Pass;                                                
+      18 +use rng::Rng;                                                  
+      19 +use waiter::{Table, Waiter};                                   
+      20 +                                                               
+      21 +const NUM_WAITERS: usize = 4;                                  
+      22 +const TABLES_PER_WAITER: usize = 5;                            
+      23 +const MIN_CUSTOMERS: u64 = 2;                                  
+      24 +const MAX_CUSTOMERS: u64 = 6;                                  
+      25 +                                                               
+      26  fn main() {
+       2 -    println!("Hello, world!");                                 
+      27 +    let mut rng = Rng::new(0);                                 
+      28 +    let pass = Arc::new(Pass::new());                          
+      29 +    let (kitchen, kitchen_thread) = open_kitchen(              
+      30 +        Chef {                                                 
+      31 +            name: String::from("Chef"),                        
+      32 +        },                                                     
+      33 +        Arc::clone(&pass),                                     
+      34 +    );                                                         
+      35 +                                                               
+      36 +    // Each waiter gets their own 5 tables, numbered so no two 
+         +waiters share one.                                             
+      37 +    let mut waiters = Vec::new();                              
+      38 +    for w in 1..=NUM_WAITERS {                                 
+      39 +        let tables: Vec<Table> = (1..=TABLES_PER_WAITER)       
+      40 +            .map(|t| Table {                                   
+      41 +                number: (w - 1) * TABLES_PER_WAITER + t,       
+      42 +                customers: rng.range(MIN_CUSTOMERS, MAX_CUSTOME
+         +RS) as usize,                                                  
+      43 +            })                                                 
+      44 +            .collect();                                        
+      45 +        let numbers: Vec<String> = tables                      
+      46 +            .iter()                                            
+      47 +            .map(|t| format!("{}({})", t.number, t.customers)) 
+      48 +            .collect();                                        
+      49 +        println!("Waiter {} has tables (customers): {}", w, num
+         +bers.join(", "));                                              
+      50 +        waiters.push(Waiter { id: w, tables });                
+      51 +    }                                                          
+      52 +    println!();                                                
+      53 +                                                               
+      54 +    let handles: Vec<_> = waiters                              
+      55 +        .into_iter()                                           
+      56 +        .map(|waiter| {                                        
+      57 +            let kitchen = kitchen.clone();                     
+      58 +            let pass = Arc::clone(&pass);                      
+      59 +            thread::spawn(move || waiter.work(kitchen, pass))  
+      60 +        })                                                     
+      61 +        .collect();                                            
+      62 +                                                               
+      63 +    // Main does not place orders, so it lets go of its proxy r
+         +ight away.                                                     
+      64 +    drop(kitchen);                                             
+      65 +                                                               
+      66 +    let mut total = 0;                                         
+      67 +    let mut counts = Vec::new();                               
+      68 +    for (i, handle) in handles.into_iter().enumerate() {       
+      69 +        let served = handle.join().expect("a waiter thread pani
+         +cked");                                                        
+      70 +        counts.push(format!("Waiter {}: {}", i + 1, served));  
+      71 +        total += served;                                       
+      72 +    }                                                          
+      73 +    kitchen_thread.join().expect("the kitchen thread panicked")
+         +;                                                              
+      74 +                                                               
+      75 +    println!();                                                
+      76 +    println!("Plates carried out: {}", counts.join(", "));     
+      77 +    println!(                                                  
+      78 +        "Served {} of {} orders.",                             
+      79 +        total,                                                 
+      80 +        NUM_WAITERS * TABLES_PER_WAITER                        
+      81 +    );                                                         
+      82  }
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/studio13" && cargo
+      build 2>&1 | tail -20 && cargo run -q 2>&1)
+  ⎿     Compiling restaurant v0.1.0 (/Users/prestonmeek/Desktop/CLASS REPOS
+     /CSE 5402/studio13)
+         Finished dev [unoptimized + debuginfo] target(s) in 1.29s
+     … +136 lines (ctrl+o to expand)
+  ⎿  Created ~/Desktop/CLASS REPOS/CSE 5402/studio13/Cargo.lock (+7 -0)
+      1 +# This file is automatically @generated by Cargo.               
+      2 +# It is not intended for manual editing.                        
+      3 +version = 3                                                     
+      4 +                                                                
+      5 +[[package]]                                                     
+      6 +name = "restaurant"                                             
+      7 +version = "0.1.0"                                               
+
+⏺ I built the project in studio13/ and ran it. It compiles with no warnings and
+  served all 20 orders. It uses only the standard library, so it needs no crates
+  or network.
+
+  How each pattern maps to the code
+
+  - Active Object (src/kitchen.rs): waiters never touch the chef directly. They
+    call KitchenProxy::place_order, which turns the call into a MethodRequest
+    and puts it on a channel. A kitchen thread takes requests off that channel
+    one at a time and hands each to the Chef, which does the cooking.
+  - Half-Sync/Half-Async: the async half is the waiters. place_order returns
+    right away, so a waiter keeps taking orders while the chef cooks. The
+    channel sits between the two halves. The sync half is the chef, who blocks
+    on each order until it's cooked.
+  - Leader/Followers (src/pass.rs): the "pass" is the counter where finished
+    plates go. One waiter at a time is the leader and watches it. When a plate
+    shows up, the leader picks it up, hands leadership to a waiting follower,
+    and then carries the plate out. When the kitchen closes, the shutdown passes
+    from waiter to waiter until all of them have exited.
+  - Orders (src/order.rs): OrderStatus is Ordered, Ready or Served. Each change
+    prints a line like [READY  ] order #4 table 17 ....
+  - Setup (src/main.rs): there are 4 waiter threads. Each gets 5 tables of its
+    own (1–5, 6–10 and so on), and each table gets 2–6 customers at random
+    (src/rng.rs). There is one order per table.
+
+  One thing to decide: I read "bringing food back to their tables" in the
+  classic Leader/Followers way. Whichever waiter is leader carries the plate,
+  even to another waiter's table. The output shows both waiters, for example
+  table 16 (Waiter 4's table) brought out by Waiter 3. If you meant that each
+  waiter should only serve their own tables, the leader would have to pass
+  plates to the right waiter. That change is small, but it moves away from
+  classic Leader/Followers.
+
+  Run it with cargo run. The table sizes and timing change on every run.
+
+✻ Churned for 1m 51s · done 3:43 PM
+
+❯ sorry can u move this rust project to a nested folder inside studio13         
+
+⏺ Bash(cd "/Users/prestonmeek/Desktop/CLASS REPOS/CSE 5402/studio13" && mkdir
+      restaurant && mv Cargo.toml Cargo.lock src target restaurant/ && ls -a .
+      restaurant && cd…)
+  ⎿  .:
+     .
+     ..
+     … +11 lines (ctrl+o to expand)
+  ⎿  Deleted ~/Desktop/CLASS REPOS/CSE 5402/studio13/Cargo.lock (+0 -7)
+      1 -# This file is automatically @generated by Cargo.               
+      2 -# It is not intended for manual editing.                        
+      3 -version = 3                                                     
+      4 -                                                                
+      5 -[[package]]                                                     
+      6 -name = "restaurant"                                             
+      7 -version = "0.1.0"                                               
+  ⎿  Deleted ~/Desktop/CLASS REPOS/CSE 5402/studio13/Cargo.toml (+0 -8)
+      1 -[package]                                                       
+      2 -name = "restaurant"                                             
+      3 -version = "0.1.0"                                               
+      4 -edition = "2021"                                                
+      5 -                                                                
+      6 -# See more keys and their definitions at https://doc.rust-lang.o
+        -rg/cargo/reference/manifest.html                                
+      7 -                                                                
+      8 -[dependencies]                                                  
+  ⎿  Created Cargo.lock (+7 -0)
+      1 +# This file is automatically @generated by Cargo.               
+      2 +# It is not intended for manual editing.                        
+      3 +version = 3                                                     
+      4 +                                                                
+      5 +[[package]]                                                     
+      6 +name = "restaurant"                                             
+      7 +version = "0.1.0"                                               
+  ⎿  Created Cargo.toml (+8 -0)
+      1 +[package]                                                       
+      2 +name = "restaurant"                                             
+      3 +version = "0.1.0"                                               
+      4 +edition = "2021"                                                
+      5 +                                                                
+      6 +# See more keys and their definitions at https://doc.rust-lang.o
+        +rg/cargo/reference/manifest.html                                
+      7 +                                                                
+      8 +[dependencies]                                                  
+  ⎿  Created src/kitchen.rs (+79 -0)
+       1 +// kitchen.rs                                                  
+       2 +// Active Object pattern plus the sync half of Half-Sync/Half-A
+         +sync.                                                          
+       3 +//                                                             
+       4 +//   KitchenProxy  : the proxy. Waiters call place_order and re
+         +turn at once.                                                  
+       5 +//   MethodRequest : a call turned into a message.             
+       6 +//   activation queue : the mpsc channel between the proxy and 
+         +the scheduler.                                                 
+       7 +//   scheduler     : the kitchen thread. It takes one request a
+         +t a time off                                                   
+       8 +//                   the queue and runs it on the servant.     
+       9 +//   Chef          : the servant. It cooks one order at a time,
+         + blocking                                                      
+      10 +//                   while it cooks. This is the synchronous la
+         +yer.                                                           
+      11 +//                                                             
+      12 +// When an order is cooked, the scheduler puts it on the pass, 
+         +which is the                                                   
+      13 +// result handoff back to the waiters.                         
+      14 +                                                               
+      15 +use std::sync::mpsc::{channel, Sender};                        
+      16 +use std::sync::Arc;                                            
+      17 +use std::thread::{self, JoinHandle};                           
+      18 +use std::time::Duration;                                       
+      19 +                                                               
+      20 +use crate::order::{Order, OrderStatus};                        
+      21 +use crate::pass::Pass;                                         
+      22 +                                                               
+      23 +const COOK_MS_PER_CUSTOMER: u64 = 40;                          
+      24 +                                                               
+      25 +enum MethodRequest {                                           
+      26 +    Cook(Order),                                               
+      27 +}                                                              
+      28 +                                                               
+      29 +#[derive(Clone)]                                               
+      30 +pub struct KitchenProxy {                                      
+      31 +    activation_queue: Sender<MethodRequest>,                   
+      32 +}                                                              
+      33 +                                                               
+      34 +impl KitchenProxy {                                            
+      35 +    // Async call. Queues the order and returns without waiting
+         + for the chef.                                                 
+      36 +    pub fn place_order(&self, order: Order) {                  
+      37 +        self.activation_queue                                  
+      38 +            .send(MethodRequest::Cook(order))                  
+      39 +            .expect("kitchen closed before all orders were plac
+         +ed");                                                          
+      40 +    }                                                          
+     … 39 more lines (ctrl+o to expand)
+  ⎿  … 11 more files changed
+
+⏺ I moved the project into studio13/restaurant/, named after the package.
+  writeup.md is still in studio13/. The project builds from its new spot, and
+  you now start it with cargo run from inside restaurant/.
+
+✻ Sautéed for 5s · done 3:43 PM
+
+❯ does state.has_leader not need to be atomic?                                  
+
+⏺ No, it doesn't need to be atomic. has_leader lives inside Mutex<PassState>, so
+  every read and write of it happens while the lock is held:
+
+  let mut state = self.state.lock().unwrap();   // lock held from here
+  while state.has_leader {
+      state = self.leader_free.wait(state).unwrap();
+  }
+  state.has_leader = true;
+
+  - The lock covers it. Only one thread can hold the lock at a time, so two
+    waiters can never read or write has_leader at the same moment. The lock also
+    makes sure each thread sees the latest value, which is the job an atomic
+    would otherwise do.
+  - Rust enforces this. The only way to reach state.has_leader is through the
+    guard that lock() returns. If you tried to touch it without the lock, the
+    code would not compile.
+  - wait is safe too. Condvar::wait gives up the lock while it sleeps and takes
+    it back before it returns. So the while state.has_leader check always runs
+    with the lock held.
+
+  An AtomicBool by itself would actually be worse here. "Check that there's no
+  leader, then become leader" has to happen as one step, together with the sleep
+  and wake logic and with the plates queue. With a separate atomic, a thread
+  could check the flag and decide to sleep, and the wakeup could fire before it
+  actually starts waiting. That wakeup would be lost and the waiter would sleep
+  forever. Keeping all the shared state under one mutex and using condvars
+  avoids that whole class of bug.
+
+✻ Brewed for 9s · done 3:53 PM
