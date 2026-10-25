@@ -277,7 +277,7 @@ impl Chef {
         self.tx.send(WorkItem::Quit).unwrap();
     }
 
-    fn activate(&mut self) {
+    fn activate(&mut self, restaurant: Arc<Restaurant>) {
         if self.handle.is_none() {
             let rx = self.rx.take().unwrap();
 
@@ -286,12 +286,22 @@ impl Chef {
 
                 for item in rx {
                     match item {
-                        WorkItem::Quit => return,
+                        WorkItem::Quit => break,
                         WorkItem::Process(mut order_item) => {
                             order_item.order_status = Status::Ready;
-                            println!("{:?}", order_item);
+
+                            let leader = restaurant.leader();
+
+                            leader
+                                .lock()
+                                .expect("Poisoned mutex")
+                                .pickup(WorkItem::Process(order_item));
                         }
-                    };
+                    }
+                }
+
+                for w in &restaurant.waiters {
+                    w.lock().expect("Poisoned mutex").quit();
                 }
             }))
         }
@@ -396,6 +406,28 @@ fn main() {
 
     let chef = Arc::new(Mutex::new(Chef::new()));
     let restaurant = Arc::new(Restaurant::new(chef, arc_waiters));
+
+    restaurant
+        .chef
+        .lock()
+        .expect("Poisoned mutex")
+        .activate(Arc::clone(&restaurant));
+
+    for w in &restaurant.waiters {
+        w.activate(Arc::clone(&restaurant));
+    }
+
+    // Wait until every waiter has delivered all its orders
+    restaurant.wait_all_in_queue();
+
+    // Chef finishes the remaining dishes, quits, then closes its thread
+    restaurant.chef.lock().expect("Poisoned mutex").quit();
+    restaurant.chef.lock().expect("Poisoned mutex").finish();
+
+    // Waiters finish serving and exit
+    for w in &restaurant.waiters {
+        w.finish().expect("Unable to join waiter");
+    }
 
     println!("Closing time!");
 }
