@@ -1,0 +1,21 @@
+use std::env;
+
+const ERR_INVALID_ARGS: u8 = 1;
+
+const ARG_IDX_PORT_NUMBER: usize = 0;
+
+fn main() -> Result<(), u8> {
+    let program_name = env::args().take(1).collect::<String>();
+    let program_args = env::args().skip(1).collect::<Vec<_>>();
+
+    if program_args.is_empty() || program_args.len() > 1 {
+        eprintln!("Usage: {program_name} port_number");
+        return Err(ERR_INVALID_ARGS);
+    }
+
+    let port = match program_args[ARG_IDX_PORT_NUMBER].as_str().parse::<usize>()?;
+
+    println!("{}", program_name);
+
+    Ok(())
+}
