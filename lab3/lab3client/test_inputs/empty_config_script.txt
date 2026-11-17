@@ -1,0 +1,2 @@
+[scene] Empty Config
+empty_config.txt

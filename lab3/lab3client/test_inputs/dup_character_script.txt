@@ -1,0 +1,2 @@
+[scene] A Character Listed Twice
+dup_character_config.txt

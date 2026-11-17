@@ -1,0 +1,2 @@
+[scene] CRLF Line Endings Test
+crlf_config.txt

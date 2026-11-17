@@ -1,0 +1,10 @@
+43 A messenger enters with deliberately messy lines.
+
+    
+notanumber This line has a bad first token and must be skipped.
+-5 A negative value is not a usize and must be skipped.
+44		This line has extra whitespace after its line number.
+35 A tie with another line number, to test stable ordering.
+onlyonetoken
+99999999999999999999999999999 This overflows usize and must be skipped.
+   45    Leading whitespace before the line number.

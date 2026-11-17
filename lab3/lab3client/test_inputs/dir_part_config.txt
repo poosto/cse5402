@@ -1,0 +1,2 @@
+Alpha alpha_c.txt
+Folder a_directory

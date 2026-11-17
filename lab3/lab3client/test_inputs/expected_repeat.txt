@@ -1,0 +1,11 @@
+The Same Cast Twice
+
+[Enter Alpha.]
+
+Alpha.
+Alpha returns in C.
+
+Alpha.
+Alpha returns in C.
+
+[Exit Alpha.]
