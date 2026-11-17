@@ -32,14 +32,29 @@ pub const BYTES_READ_AT_EOF: usize = 0;
 
 pub static WHINGE_MODE: AtomicBool = AtomicBool::new(false);
 
-// Write a line to standard error, the same way eprintln! does, but lock stderr first.
+// Write a line to standard error, the same way eprintln! does, but with stderr locked.
 // If the write fails, turn the error into ERR_FAILED_TO_WRITE_OUTPUT.
 // The caller decides what to do with the Result, usually by adding ?.
+//
+// There are two ways to call it:
+//   write_error!(lock, "format", args) writes to a stderr lock the caller already holds.
+//     Use this to keep several lines together while other threads wait.
+//     The lock must be a mutable variable holding a StderrLock.
+//   write_error!("format", args) locks stderr just for this one line.
 macro_rules! write_error {
-    ($($arg:tt)*) => {{
+    // A lock is passed in. A format string is never an identifier, so a normal
+    // call never matches this rule by mistake.
+    ($lock:ident, $($arg:tt)*) => {{
         use std::io::Write;
-        writeln!(std::io::stderr().lock(), $($arg)*)
+        // The type here makes sure the lock is for stderr and not stdout
+        let stderr_lock: &mut std::io::StderrLock = &mut $lock;
+        writeln!(stderr_lock, $($arg)*)
             .map_err(|_| $crate::lab3::declarations::ERR_FAILED_TO_WRITE_OUTPUT)
+    }};
+    // No lock is passed in, so take one and hand it to the rule above
+    ($($arg:tt)*) => {{
+        let mut stderr_lock = std::io::stderr().lock();
+        $crate::lab3::declarations::write_error!(stderr_lock, $($arg)*)
     }};
 }
 
