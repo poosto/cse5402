@@ -32,14 +32,14 @@ impl Player {
     }
 
     // Read the player's part file, add each valid line, and sort the lines by line number.
-    // Return an error if the file cannot be read.
+    // Return an error if the file cannot be read or a warning cannot be written.
     pub fn prepare(&mut self, part_file_name: &str) -> Result<(), u8> {
         let mut lines = Vec::new();
 
         grab_trimmed_file_lines(part_file_name, &mut lines)?;
 
         for line in lines {
-            self.add_script_line(&line);
+            self.add_script_line(&line)?;
         }
 
         // Only sort by line number so if two lines have the same number,
@@ -53,16 +53,17 @@ impl Player {
     // Add one line from the part file. The first token is the line number and the rest is
     // the text. Blank lines are skipped. In whinge mode, warn about lines that have only
     // one token or do not start with a valid line number.
-    fn add_script_line(&mut self, line: &str) {
+    // Return an error if a warning cannot be written.
+    fn add_script_line(&mut self, line: &str) -> Result<(), u8> {
         if line.is_empty() {
-            return;
+            return Ok(());
         }
 
         if let Some((first_token, rest)) = line.split_once(char::is_whitespace) {
             match first_token.parse::<usize>() {
                 Err(_) => {
                     if WHINGE_MODE.load(atomic::Ordering::SeqCst) {
-                        eprintln!("WARNING: Skipping {}'s line because its first token \"{}\" does not represent a valid usize value", self.name, first_token);
+                        write_error!("WARNING: Skipping {}'s line because its first token \"{}\" does not represent a valid usize value", self.name, first_token)?;
                     }
                 }
                 Ok(line_number) => {
@@ -72,11 +73,14 @@ impl Player {
         } else if WHINGE_MODE.load(atomic::Ordering::SeqCst) {
             // no whitespace at all means the line holds a single token, so it cannot
             // carry both a line number and the text the character speaks
-            eprintln!(
+            write_error!(
                 "WARNING: Skipping {}'s line \"{}\" because it has only one token",
-                self.name, line
-            );
+                self.name,
+                line
+            )?;
         }
+
+        Ok(())
     }
 
     // Print the player's next line and move on to the one after it. If a different player

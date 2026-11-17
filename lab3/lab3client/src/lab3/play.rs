@@ -56,7 +56,8 @@ impl Play {
     // Add one script line to the script config. Blank lines are skipped. A [scene] line
     // adds a new scene title, and any other line adds its first token as a configuration file.
     // In whinge mode, warn about a [scene] line with no title and about extra tokens.
-    fn add_config(config_line: &str, script_config: &mut ScriptConfig) {
+    // Return an error if a warning cannot be written.
+    fn add_config(config_line: &str, script_config: &mut ScriptConfig) -> Result<(), u8> {
         let words: Vec<&str> = config_line.split_whitespace().collect();
 
         let whinge = WHINGE_MODE.load(Ordering::SeqCst);
@@ -66,10 +67,9 @@ impl Play {
             [] => {}
             [SCENE_DIRECTIVE] => {
                 if whinge {
-                    eprintln!(
-                        "WARNING: Skipping script line \"{}\" because its {} directive has no scene title",
+                    write_error!("WARNING: Skipping script line \"{}\" because its {} directive has no scene title",
                         config_line, SCENE_DIRECTIVE
-                    );
+                    )?;
                 }
             }
             [SCENE_DIRECTIVE, title @ ..] => script_config.push((true, title.join(" "))),
@@ -77,15 +77,16 @@ impl Play {
                 script_config.push((false, config_file.to_string()));
 
                 if whinge && !extra.is_empty() {
-                    eprintln!(
-                        "WARNING: Ignoring extra tokens \"{}\" after configuration file {} in script line \"{}\"",
+                    write_error!("WARNING: Ignoring extra tokens \"{}\" after configuration file {} in script line \"{}\"",
                         extra.join(" "),
                         config_file,
                         config_line
-                    );
+                    )?;
                 }
             }
         }
+
+        Ok(())
     }
 
     // Read the script file and add each non-blank line to the script config.
@@ -95,7 +96,7 @@ impl Play {
 
         // a missing script file is fatal
         if grab_trimmed_file_lines(script_file, &mut lines).is_err() {
-            eprintln!("ERROR: Failed to read script file {}", script_file);
+            write_error!("ERROR: Failed to read script file {}", script_file)?;
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
@@ -103,12 +104,12 @@ impl Play {
         lines.retain(|line| !line.is_empty());
 
         if lines.is_empty() {
-            eprintln!("ERROR: Script file {script_file} is empty");
+            write_error!("ERROR: Script file {script_file} is empty")?;
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
         for line in &lines {
-            Self::add_config(line, script_config);
+            Self::add_config(line, script_config)?;
         }
 
         Ok(())
@@ -124,17 +125,16 @@ impl Play {
 
         match self.fragments.first() {
             None => {
-                eprintln!(
+                write_error!(
                     "ERROR: Script file {} does not name any configuration files",
                     script_file
-                );
+                )?;
                 Err(ERR_FAILED_TO_GENERATE_SCRIPT)
             }
             Some(first) if first.title.is_empty() => {
-                eprintln!(
-                    "ERROR: Script file {} must give a [scene] title before its first configuration file",
+                write_error!("ERROR: Script file {} must give a [scene] title before its first configuration file",
                     script_file
-                );
+                )?;
                 Err(ERR_FAILED_TO_GENERATE_SCRIPT)
             }
             Some(_) => Ok(()),
@@ -144,7 +144,8 @@ impl Play {
     // Recite each scene fragment in order. Everyone in the first fragment enters at the start,
     // and everyone in the last fragment exits at the end. Between fragments, only players
     // who are not in both fragments enter or exit.
-    pub fn recite(&mut self) {
+    // Return an error if any output cannot be written.
+    pub fn recite(&mut self) -> Result<(), u8> {
         // Can't cleanly do a for_each because a &self.fragments[i - 1] is another borrow,
         // since the iterator borrows for its entire duration.
         for idx in FIRST_FRAGMENT_IDX..self.fragments.len() {
@@ -154,7 +155,7 @@ impl Play {
                 self.fragments[idx].enter(&self.fragments[idx - NEIGHBOR_FRAGMENT_OFFSET]);
             }
 
-            self.fragments[idx].recite();
+            self.fragments[idx].recite()?;
 
             if idx == self.fragments.len() - NEIGHBOR_FRAGMENT_OFFSET {
                 self.fragments[idx].exit_all();
@@ -162,5 +163,7 @@ impl Play {
                 self.fragments[idx].exit(&self.fragments[idx + NEIGHBOR_FRAGMENT_OFFSET]);
             }
         }
+
+        Ok(())
     }
 }

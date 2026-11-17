@@ -3,6 +3,7 @@
 // Define the ReturnWrapper struct. It wraps the program's result so main can return it,
 // and turns that result into the program's exit code.
 
+use super::declarations::{write_error, ERR_FAILED_TO_WRITE_OUTPUT};
 use std::process::{ExitCode, Termination};
 
 pub struct ReturnWrapper {
@@ -25,10 +26,11 @@ impl ReturnWrapper {
 
 impl Termination for ReturnWrapper {
     // Called when main returns. Print the error code to stderr if the program failed,
-    // then return the code as the program's exit code.
+    // then return the code as the program's exit code. If the error code cannot be
+    // written, return the write error code instead, like the rest of the program does.
     fn report(self) -> ExitCode {
-        if self.error_code != Self::SUCCESS {
-            eprintln!("Error: {}", self.error_code);
+        if self.error_code != Self::SUCCESS && write_error!("Error: {}", self.error_code).is_err() {
+            return ExitCode::from(ERR_FAILED_TO_WRITE_OUTPUT);
         }
 
         ExitCode::from(self.error_code)

@@ -69,7 +69,7 @@ fn run() -> Result<(), u8> {
     let mut play = Play::new();
 
     play.prepare(&script_file_name)?;
-    play.recite();
+    play.recite()?;
 
     Ok(())
 }

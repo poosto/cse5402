@@ -43,10 +43,11 @@ impl SceneFragment {
             let mut player = Player::new(character_name);
 
             if player.prepare(character_file_name).is_err() {
-                eprintln!(
+                write_error!(
                     "ERROR: Failed to read part file {} for character {}",
-                    character_file_name, character_name
-                );
+                    character_file_name,
+                    character_name
+                )?;
                 return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
             }
 
@@ -61,18 +62,18 @@ impl SceneFragment {
     // Add one configuration line to the play config. The first two tokens are the character
     // name and part file. Lines with fewer than two tokens are skipped, and extra tokens are
     // ignored. In whinge mode, warn if a line does not have exactly two tokens, or if
-    // its character was already listed.
-    fn add_config(config_line: &str, play_config: &mut PlayConfig) {
+    // its character was already listed. Return an error if a warning cannot be written.
+    fn add_config(config_line: &str, play_config: &mut PlayConfig) -> Result<(), u8> {
         let words: Vec<&str> = config_line.split_whitespace().collect();
         let whinge = WHINGE_MODE.load(Ordering::SeqCst);
 
         if words.len() != LINE_TOKEN_COUNT && whinge {
-            eprintln!(
+            write_error!(
                 "WARNING: Configuration line \"{}\" has {} tokens, expected {}",
                 config_line,
                 words.len(),
                 LINE_TOKEN_COUNT
-            );
+            )?;
         }
 
         if words.len() >= LINE_TOKEN_COUNT {
@@ -81,10 +82,9 @@ impl SceneFragment {
             // Both entries are still kept. The warning is there because the
             // character will then enter and exit more than once.
             if whinge && play_config.iter().any(|(name, _)| name == character_name) {
-                eprintln!(
-                    "WARNING: Character {} in configuration line \"{}\" is already listed, so it will enter and exit more than once",
+                write_error!("WARNING: Character {} in configuration line \"{}\" is already listed, so it will enter and exit more than once",
                     character_name, config_line
-                );
+                )?;
             }
 
             play_config.push((
@@ -92,6 +92,8 @@ impl SceneFragment {
                 words[LINE_IDX_CHARACTER_FILE].to_string(),
             ));
         }
+
+        Ok(())
     }
 
     // Read the configuration file and add each non-blank line to the play config.
@@ -102,7 +104,7 @@ impl SceneFragment {
 
         // a missing configuration file is fatal
         if grab_trimmed_file_lines(config_file, &mut lines).is_err() {
-            eprintln!("ERROR: Failed to read configuration file {}", config_file);
+            write_error!("ERROR: Failed to read configuration file {}", config_file)?;
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
@@ -111,21 +113,21 @@ impl SceneFragment {
 
         // Check if a configuration file is empty
         if lines.is_empty() {
-            eprintln!("ERROR: Configuration file {} cannot be empty", config_file);
+            write_error!("ERROR: Configuration file {} cannot be empty", config_file)?;
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
         for line in &lines {
-            Self::add_config(line, play_config);
+            Self::add_config(line, play_config)?;
         }
 
         // Check if a configuration file only had junk
         // i.e., instead of being actually empty, it only has semantically meaningless lines
         if play_config.is_empty() {
-            eprintln!(
+            write_error!(
                 "ERROR: Configuration file {} must have at least one valid line",
                 config_file
-            );
+            )?;
             return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
         }
 
@@ -141,8 +143,8 @@ impl SceneFragment {
     }
 
     // Print every player's lines in line number order. In whinge mode, warn about
-    // missing or duplicated line numbers.
-    pub fn recite(&mut self) {
+    // missing or duplicated line numbers. Return an error if a warning cannot be written.
+    pub fn recite(&mut self) -> Result<(), u8> {
         let mut expected_line = FIRST_LINE_NUMBER;
         let mut most_recent_speaker = String::new();
         let whinge = WHINGE_MODE.load(Ordering::SeqCst);
@@ -165,7 +167,7 @@ impl SceneFragment {
                 .min();
 
             match next_line {
-                None => break,
+                None => return Ok(()),
                 Some((line, idx)) => {
                     if whinge {
                         // a gap is reported once as a range rather than line by line, since
@@ -176,16 +178,17 @@ impl SceneFragment {
                                 let last_missing = line - NEIGHBOR_LINE_OFFSET;
 
                                 if last_missing == expected_line {
-                                    eprintln!("WARNING: Line {} is missing", expected_line);
+                                    write_error!("WARNING: Line {} is missing", expected_line)?;
                                 } else {
-                                    eprintln!(
+                                    write_error!(
                                         "WARNING: Lines {} to {} are missing",
-                                        expected_line, last_missing
-                                    );
+                                        expected_line,
+                                        last_missing
+                                    )?;
                                 }
                             }
                             cmp::Ordering::Less => {
-                                eprintln!("WARNING: Line {} is duplicated", line);
+                                write_error!("WARNING: Line {} is duplicated", line)?;
                             }
                             // the line is the one expected, so there is nothing to report
                             cmp::Ordering::Equal => {}

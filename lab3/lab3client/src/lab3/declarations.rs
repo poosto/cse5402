@@ -23,10 +23,28 @@ pub const ERR_BADLY_FORMED_COMMAND_LINE: u8 = 1;
 // For example, a file could not be opened or read, or its content is malformed.
 pub const ERR_FAILED_TO_GENERATE_SCRIPT: u8 = 2;
 
+// Error code 3: Writing to standard output or standard error failed.
+// For example, the output was piped to a program that already closed.
+pub const ERR_FAILED_TO_WRITE_OUTPUT: u8 = 3;
+
 // read_line reports zero bytes read only at end of file
 pub const BYTES_READ_AT_EOF: usize = 0;
 
 pub static WHINGE_MODE: AtomicBool = AtomicBool::new(false);
+
+// Write a line to standard error, the same way eprintln! does, but lock stderr first.
+// If the write fails, turn the error into ERR_FAILED_TO_WRITE_OUTPUT.
+// The caller decides what to do with the Result, usually by adding ?.
+macro_rules! write_error {
+    ($($arg:tt)*) => {{
+        use std::io::Write;
+        writeln!(std::io::stderr().lock(), $($arg)*)
+            .map_err(|_| $crate::lab3::declarations::ERR_FAILED_TO_WRITE_OUTPUT)
+    }};
+}
+
+// Let other modules use write_error! through a normal use statement.
+pub(crate) use write_error;
 
 // Given a file name, output to a vector of Strings where each String is a trimmed line in that file.
 // Return an error code if this operation fails, otherwise an empty Ok.
@@ -34,7 +52,7 @@ pub fn grab_trimmed_file_lines(file_name: &str, file_lines: &mut Vec<String>) ->
     match File::open(file_name) {
         Err(e) => {
             if WHINGE_MODE.load(Ordering::SeqCst) {
-                eprintln!("WARNING: Failed to open file {} ({})", file_name, e);
+                write_error!("WARNING: Failed to open file {} ({})", file_name, e)?;
             }
 
             Err(ERR_FAILED_TO_GENERATE_SCRIPT)
@@ -49,10 +67,11 @@ pub fn grab_trimmed_file_lines(file_name: &str, file_lines: &mut Vec<String>) ->
                 match buf.read_line(&mut file_line) {
                     Err(e) => {
                         if WHINGE_MODE.load(Ordering::SeqCst) {
-                            eprintln!(
+                            write_error!(
                                 "WARNING: Failed to read a line from file {} ({})",
-                                file_name, e
-                            );
+                                file_name,
+                                e
+                            )?;
                         }
 
                         return Err(ERR_FAILED_TO_GENERATE_SCRIPT);
